@@ -9,101 +9,81 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --text-muted: #94a3b8; --danger: #ff4b2b; }
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --text-muted: #94a3b8; --danger: #ff4b2b; --warning: #facc15; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* Header Bereich */
+        #adminNewsBanner { width: 100%; max-width: 600px; background: var(--warning); color: #000; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: bold; display: none; animation: slideDown 0.5s ease; border: 2px solid #000; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
         .header-nav { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .status-bar { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; color: var(--primary); border: 1px solid #334155; }
-        .nickname-btn { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: var(--primary); color: #0f172a; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .nickname-btn:hover { opacity: 0.8; transform: scale(1.05); }
+        .nickname-btn { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: var(--primary); color: #0f172a; border: none; cursor: pointer; font-weight: bold; }
 
-        /* Now Playing Box */
-        .drop-zone { 
-            width: 100%; max-width: 600px; min-height: 220px; padding: 20px; 
-            border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); 
-            text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            position: relative;
-        }
-        
+        #adminPanel { width: 100%; max-width: 600px; background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--primary); display: none; }
+        #adminPanel input { background: #0f172a; border: 1px solid #334155; color: white; padding: 8px; border-radius: 5px; width: 60%; }
+        #adminPanel button { background: var(--primary); border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 5px; }
+
+        .drop-zone { width: 100%; max-width: 600px; min-height: 220px; padding: 20px; border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #activeContent img { max-width: 100%; height: 180px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; margin-bottom: 10px; }
-        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 0; text-transform: uppercase; }
 
-        /* Pause Style */
-        .pause-banner { font-size: 3rem; font-weight: 900; color: #ff4b2b; text-shadow: 0 0 20px rgba(255, 75, 43, 0.5); animation: blink 1.5s infinite; margin: 20px 0; }
+        .pause-banner { font-size: 3rem; font-weight: 900; color: var(--danger); text-shadow: 0 0 20px rgba(255, 75, 43, 0.5); animation: blink 1.5s infinite; margin: 20px 0; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        /* Pause Button */
-        .control-btns { margin-top: 15px; display: flex; gap: 10px; }
-        .pause-btn { background: rgba(255, 75, 43, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 8px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8rem; }
-        .pause-btn:hover { background: var(--danger); color: white; }
+        .player-status-container { width: 100%; max-width: 600px; margin: 20px 0 40px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; }
+        .player-row { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+        .player-name { color: var(--primary); font-weight: bold; flex: 1; }
+        .player-game { color: white; flex: 2; text-align: center; }
+        .admin-actions { display: flex; gap: 10px; padding-left: 10px; }
+        .btn-del { color: var(--danger); cursor: pointer; font-weight: bold; font-size: 1.2rem; }
+        .btn-promote { color: var(--warning); cursor: pointer; font-size: 1.1rem; }
 
-        /* Logs */
-        .log-container {
-            width: 100%; max-width: 600px; margin: 20px 0 40px;
-            background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 10px;
-            border: 1px solid #1e293b; font-size: 0.85rem;
-        }
-        .log-entry { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #1e293b; color: var(--text-muted); }
-        .log-entry:last-child { border-bottom: none; }
-        .log-user { color: var(--primary); font-weight: bold; }
-
-        /* Pool */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; padding-bottom: 50px; }
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid #334155; transition: 0.2s; display: flex; flex-direction: column; }
-        .card:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .card img { width: 100%; height: 160px; object-fit: cover; pointer-events: none; background: #000; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid #334155; transition: 0.2s; }
+        .card img { width: 100%; height: 160px; object-fit: cover; pointer-events: none; }
         .card-title { padding: 8px; font-size: 0.8rem; font-weight: bold; text-align: center; background: #1c2641; min-height: 35px; display: flex; align-items: center; justify-content: center; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
+
+    <div id="adminNewsBanner"></div>
 
     <div class="header-nav">
         <div class="status-bar" id="syncStatus">Verbinde...</div>
         <button class="nickname-btn" onclick="changeName()">👤 Nickname</button>
     </div>
 
-    <div class="drop-zone" id="dropZone">
-        <div id="activeContent">
-            <p style="color:#475569">Lade Dashboard...</p>
-        </div>
-        <div class="control-btns">
-            <button class="pause-btn" onclick="setPause()">⏸ PAUSE EINLEGEN</button>
+    <div id="adminPanel">
+        <div style="font-size: 0.7rem; color: var(--primary); margin-bottom: 5px; font-weight: bold;">ADMIN PANEL</div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="newsInput" placeholder="Broadcast Nachricht...">
+            <button onclick="sendNews()">Senden</button>
+            <button style="background:var(--danger); color:white;" onclick="clearNews()">X</button>
         </div>
     </div>
 
-    <div class="log-container" id="logContainer">
-        <div style="text-align: center; font-size: 0.7rem; color: #475569; margin-bottom: 5px; text-transform: uppercase;">Letzte 5 Aktivitäten</div>
-        <div id="logList"></div>
+    <div class="drop-zone" id="dropZone">
+        <div id="activeContent"><p style="color:#475569">Lade Dashboard...</p></div>
+        <div style="margin-top:15px;"><button style="background:rgba(255,75,43,0.1); color:var(--danger); border:1px solid var(--danger); padding:8px 20px; border-radius:10px; cursor:pointer; font-weight:bold;" onclick="setPause()">⏸ PAUSE EINLEGEN</button></div>
+    </div>
+
+    <div class="player-status-container">
+        <div style="text-align: center; font-size: 0.7rem; color: #475569; margin-bottom: 10px; text-transform: uppercase;">Wer zockt was?</div>
+        <div id="playerList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // Nickname Logik
-        function getName() {
-            let nick = localStorage.getItem('lan_nickname');
-            if (!nick) {
-                nick = prompt("Nickname eingeben:", "Gast_" + Math.floor(Math.random()*100));
-                if (!nick || nick.trim() === "") nick = "Anonym";
-                localStorage.setItem('lan_nickname', nick);
-            }
-            return nick;
-        }
+        const MASTER_ADMIN = "Saint";
+        let nickname = localStorage.getItem('lan_nickname') || "Gast_" + Math.floor(Math.random()*100);
+        localStorage.setItem('lan_nickname', nickname);
 
         function changeName() {
-            let newNick = prompt("Neuer Nickname:", localStorage.getItem('lan_nickname'));
-            if (newNick && newNick.trim() !== "") {
-                localStorage.setItem('lan_nickname', newNick);
-                location.reload();
-            }
+            let n = prompt("Neuer Nickname:", nickname);
+            if (n && n.trim() !== "") { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
         }
 
-        let nickname = getName();
-
-        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -117,70 +97,78 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const gameRef = database.ref('current_game');
-        const logRef = database.ref('activity_logs');
+        const playersRef = database.ref('players');
+        const newsRef = database.ref('admin_news');
+        const adminsRef = database.ref('admins'); // Liste der ernannten Admins
+
+        // News Logik
+        newsRef.on('value', (s) => {
+            const banner = document.getElementById('adminNewsBanner');
+            if(s.val()) { banner.innerText = "📣 " + s.val(); banner.style.display = 'block'; }
+            else { banner.style.display = 'none'; }
+        });
+
+        // Berechtigungen prüfen
+        function checkAdminStatus() {
+            adminsRef.child(nickname).on('value', (snapshot) => {
+                if (nickname === MASTER_ADMIN || snapshot.val() === true) {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    window.isAdmin = true;
+                } else {
+                    document.getElementById('adminPanel').style.display = 'none';
+                    window.isAdmin = false;
+                }
+            });
+        }
+        checkAdminStatus();
+
+        function sendNews() { if(window.isAdmin) newsRef.set(document.getElementById('newsInput').value); }
+        function clearNews() { if(window.isAdmin) { newsRef.set(""); document.getElementById('newsInput').value = ""; } }
+        function setPause() { gameRef.set({ isPause: true }); playersRef.child(nickname).set("⏸ PAUSE"); }
 
         const games = [
-            { title: "The Finals", img: "img/thefinals.jpg" },
-            { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
-            { title: "CS 1.6", img: "img/cs16.jpg" },
-            { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
-            { title: "Flatout 2", img: "img/Flatout2pc.jpg" },
-            { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
-            { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" },
-            { title: "Serious Sam 2", img: "img/Serious_Sam_II.jpg" },
-            { title: "Blobby Volley", img: "img/Blobby-volley-logo.png" },
-            { title: "C&C 3", img: "img/Command_&_Conquer_Tiberium_Wars_Logo.jpg" },
-            { title: "Dead Island 2", img: "img/Dead_Island_2_cover_art.jpg" },
-            { title: "BF Vietnam", img: "img/Battlefield_Vietnam_Coverart.png" },
-            { title: "Dead by Daylight", img: "img/Dead_by_Daylight_Logo.png" },
-            { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
+            { title: "The Finals", img: "img/thefinals.jpg" }, { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
+            { title: "CS 1.6", img: "img/cs16.jpg" }, { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
+            { title: "Flatout 2", img: "img/Flatout2pc.jpg" }, { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
+            { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" }, { title: "Serious Sam 2", img: "img/Serious_Sam_II.jpg" },
+            { title: "Blobby Volley", img: "img/Blobby-volley-logo.png" }, { title: "C&C 3", img: "img/Command_&_Conquer_Tiberium_Wars_Logo.jpg" },
+            { title: "Dead Island 2", img: "img/Dead_Island_2_cover_art.jpg" }, { title: "BF Vietnam", img: "img/Battlefield_Vietnam_Coverart.png" },
+            { title: "Dead by Daylight", img: "img/Dead_by_Daylight_Logo.png" }, { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
         ];
-
-        function setPause() {
-            gameRef.set({ isPause: true });
-            logRef.push({ user: nickname, game: "PAUSE", time: getTime() });
-        }
-
-        function getTime() {
-            return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }
 
         function renderPool() {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
             games.forEach(game => {
-                const card = document.createElement('div');
-                card.className = 'card';
+                const card = document.createElement('div'); card.className = 'card';
                 card.innerHTML = `<img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x200?text=Fehler'"><div class="card-title">${game.title}</div>`;
-                card.onclick = () => {
-                    gameRef.set(game);
-                    logRef.push({ user: nickname, game: game.title, time: getTime() });
-                };
+                card.onclick = () => { gameRef.set(game); playersRef.child(nickname).set(game.title); };
                 grid.appendChild(card);
             });
         }
 
-        gameRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            const content = document.getElementById('activeContent');
-            if(data && data.isPause) {
-                content.innerHTML = `<div class="pause-banner">GROSSE PAUSE</div>`;
-            } else if(data) {
-                content.innerHTML = `<img src="${data.img}" style="animation: fadeIn 0.4s ease-out;"><h3>${data.title}</h3>`;
-            }
+        gameRef.on('value', (s) => {
+            const d = s.val(); const c = document.getElementById('activeContent');
+            if(d && d.isPause) c.innerHTML = `<div class="pause-banner">GROSSE PAUSE</div>`;
+            else if(d) c.innerHTML = `<img src="${d.img}"><h3>${d.title}</h3>`;
             document.getElementById('syncStatus').innerText = "User: " + nickname;
         });
 
-        logRef.limitToLast(5).on('value', (snapshot) => {
-            const logList = document.getElementById('logList');
-            logList.innerHTML = '';
-            const logs = snapshot.val();
-            if (logs) {
-                Object.values(logs).reverse().forEach(entry => {
-                    const div = document.createElement('div');
-                    div.className = 'log-entry';
-                    div.innerHTML = `<span>${entry.time}</span><span><span class="log-user">${entry.user}</span>: ${entry.game === 'PAUSE' ? '⏸ Pause' : entry.game}</span>`;
-                    logList.appendChild(div);
+        playersRef.on('value', (s) => {
+            const p = s.val(); const l = document.getElementById('playerList');
+            l.innerHTML = '';
+            if (p) {
+                Object.keys(p).forEach(name => {
+                    const row = document.createElement('div'); row.className = 'player-row';
+                    let actions = "";
+                    if (window.isAdmin) {
+                        actions += `<span class="btn-del" onclick="playersRef.child('${name}').remove()" title="Kick">×</span>`;
+                    }
+                    if (nickname === MASTER_ADMIN && name !== MASTER_ADMIN) {
+                        actions += `<span class="btn-promote" onclick="adminsRef.child('${name}').set(true)" title="Admin geben">★</span>`;
+                    }
+                    row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span><div class="admin-actions">${actions}</div>`;
+                    l.appendChild(row);
                 });
             }
         });
