@@ -48,8 +48,10 @@
         .card:hover { box-shadow: 0 0 15px var(--matrix-green); background: rgba(0, 40, 0, 1); }
         .suggested-by { font-size: 0.6rem; color: #888; margin-top: 5px; text-transform: uppercase; }
         
+        /* Markierung für Grundspiele */
+        .card.core-game { border-style: double; border-width: 3px; }
+
         .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; }
-        #resetBtn { display: none; background: #300; border-color: var(--danger); color: var(--danger); margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -57,16 +59,15 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="header-nav">
-        <div id="syncStatus">[MATRIX GUEST]</div>
+        <div id="syncStatus">[MATRIX CONNECTED]</div>
         <div>
-            <button id="resetBtn" class="btn-matrix" onclick="resetPool()">RESET POOL</button>
             <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
         </div>
     </div>
 
     <div class="add-game-container">
-        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUE DATEN EINSPEISEN</div>
-        <input type="text" id="newGameInput" placeholder="PROGRAMM-NAME...">
+        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUES PROGRAMM IN DEN POOL SPEISEN</div>
+        <input type="text" id="newGameInput" placeholder="TITEL...">
         <button class="btn-matrix" onclick="addGameToPool()">ADD</button>
     </div>
 
@@ -116,15 +117,8 @@
 
         let nickname = localStorage.getItem('lan_nickname') || "Neo_" + Math.floor(Math.random()*100);
 
-        const defaultGames = ["The Finals", "Warcraft 3", "CS 1.6", "Quake 3", "Flatout 2", "World War Z", "Trackmania", "Serious Sam 2", "Blobby Volley", "C&C 3", "Dead Island 2", "BF Vietnam", "Dead by Daylight", "Northgard"];
-
-        function initPool() {
-            poolRef.once('value', s => {
-                if (!s.exists()) {
-                    defaultGames.forEach(title => poolRef.push({ title: title, user: "SYSTEM" }));
-                }
-            });
-        }
+        // Die unveränderlichen Grundspiele
+        const coreGames = ["The Finals", "Warcraft 3", "CS 1.6", "Quake 3", "Flatout 2", "World War Z", "Trackmania", "Serious Sam 2", "Blobby Volley", "C&C 3", "Dead Island 2", "BF Vietnam", "Dead by Daylight", "Northgard"];
 
         function addGameToPool() {
             const val = document.getElementById('newGameInput').value.trim();
@@ -134,17 +128,24 @@
             }
         }
 
-        function resetPool() {
-            if(confirm("POOL KOMPLETT LEEREN?")) {
-                poolRef.remove();
-                location.reload();
-            }
-        }
-
-        // POOL LADEN
+        // --- KOMBINIERTER POOL LADEN ---
         poolRef.on('value', s => {
             const grid = document.getElementById('gameGrid');
-            grid.innerHTML = '';
+            grid.innerHTML = ''; // Liste leeren
+            
+            // 1. Grundspiele anzeigen (aus dem lokalen Array)
+            coreGames.forEach(title => {
+                const card = document.createElement('div');
+                card.className = 'card core-game';
+                card.innerHTML = `<div>${title}</div><div class="suggested-by">CORE SYSTEM</div>`;
+                card.onclick = () => {
+                    gameRef.set({ title: title, isPause: false });
+                    playersRef.child(nickname).set(title);
+                };
+                grid.appendChild(card);
+            });
+
+            // 2. Zusatzspiele aus Firebase anzeigen (hinten dran)
             const data = s.val();
             if(data) {
                 Object.keys(data).forEach(id => {
@@ -152,7 +153,7 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                    card.innerHTML = `${del}<div>${game.title}</div><div class="suggested-by">FROM: ${game.user || 'SYSTEM'}</div>`;
+                    card.innerHTML = `${del}<div>${game.title}</div><div class="suggested-by">FROM: ${game.user || 'ANON'}</div>`;
                     card.onclick = () => {
                         gameRef.set({ title: game.title, isPause: false });
                         playersRef.child(nickname).set(game.title);
@@ -162,7 +163,7 @@
             }
         });
 
-        // SPIELERLISTE
+        // SPIELERLISTE (Tabelle)
         playersRef.on('value', s => {
             const p = s.val(); const l = document.getElementById('playerList');
             l.innerHTML = '';
@@ -179,15 +180,12 @@
         auth.onAuthStateChanged(user => {
             window.isAdmin = !!user;
             document.getElementById('syncStatus').innerText = user ? "[ADMIN ACCESS]" : "[MATRIX GUEST]";
-            document.getElementById('resetBtn').style.display = user ? "inline-block" : "none";
         });
 
         function changeName() {
             let n = prompt("NICKNAME:", nickname);
             if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
         }
-
-        window.onload = initPool;
     </script>
 </body>
 </html>
