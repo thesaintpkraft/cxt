@@ -3,59 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE</title>
+    <title>LAN 2026 | PROTOTYPE MATRIX</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 
     <style>
-        :root { --matrix-green: #00ff41; --matrix-dark: #000800; --danger: #ff4b2b; }
-        body { font-family: 'Courier New', monospace; background: var(--matrix-dark); color: var(--matrix-green); padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        
-        /* Input Bereich */
-        .add-game-box { 
-            width: 100%; max-width: 600px; padding: 20px; 
-            border: 2px solid var(--matrix-green); margin-bottom: 30px; 
-            background: rgba(0, 20, 0, 0.9); text-align: center;
+        :root { 
+            --matrix-green: #00ff41; 
+            --matrix-dark: #000800; 
+            --danger: #ff4b2b; 
         }
-        input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; }
-        button { background: var(--matrix-green); color: black; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
-
-        /* Spiele Liste */
-        .game-pool { width: 100%; max-width: 800px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .game-item { 
-            background: rgba(0, 40, 0, 0.5); border: 1px solid var(--matrix-green); 
-            padding: 15px; text-align: center; position: relative; transition: 0.2s;
-            cursor: pointer;
-        }
-        .game-item:hover { background: var(--matrix-green); color: black; }
         
-        .delete-btn { 
-            position: absolute; top: 5px; right: 5px; color: var(--danger); 
-            font-weight: bold; cursor: pointer; display: none; padding: 5px;
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            background: var(--matrix-dark); 
+            color: var(--matrix-green); 
+            margin: 0; padding: 20px; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; overflow-x: hidden;
         }
 
-        .active-status { font-size: 0.8rem; border: 1px solid var(--matrix-green); padding: 5px 10px; margin-bottom: 20px; }
-        .admin-only { display: none; margin-bottom: 10px; color: var(--danger); font-size: 0.7rem; }
+        #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; }
+
+        .header-nav { width: 100%; max-width: 700px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; }
+        .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .btn-matrix:hover { background: var(--matrix-green); color: black; }
+
+        /* NEU: Spiele hinzufügen Bereich */
+        .add-game-container {
+            width: 100%; max-width: 700px; padding: 20px;
+            background: rgba(0, 20, 0, 0.9); border: 1px solid var(--matrix-green);
+            border-radius: 15px; margin-bottom: 20px; text-align: center;
+        }
+        .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; }
+
+        /* Wer zockt was Tabelle */
+        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); }
+        .section-title { text-align: center; font-size: 1.5rem; color: var(--matrix-green); margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 0 10px var(--matrix-green); }
+
+        .player-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0, 255, 65, 0.3); }
+        .player-name { color: white; flex: 1; font-weight: bold; }
+        .player-game { color: var(--matrix-green); flex: 2; text-align: center; }
+
+        /* Spiele-Pool Gitter */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 20px; }
+        .card { 
+            background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); 
+            padding: 20px; text-align: center; cursor: pointer; position: relative;
+        }
+        .card:hover { background: var(--matrix-green); color: black; }
+        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="active-status" id="authStatus">GAST MODUS</div>
+    <canvas id="matrixCanvas"></canvas>
 
-    <div class="add-game-box">
-        <h3>NEUES SPIEL VORSCHLAGEN</h3>
-        <input type="text" id="newGameTitle" placeholder="Titel eingeben...">
-        <button onclick="addGame()">HINZUFÜGEN</button>
+    <div class="header-nav">
+        <div id="syncStatus">[PROTOTYPE ACTIVE]</div>
+        <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
     </div>
 
-    <div class="admin-only" id="adminInfo">ADMIN RECHTE AKTIV - LÖSCHEN ERLAUBT</div>
+    <div class="add-game-container">
+        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">VORSCHLAG EINREICHEN</div>
+        <input type="text" id="newGameInput" placeholder="SPIELNAME...">
+        <button class="btn-matrix" onclick="addGameToPool()">ADD</button>
+    </div>
 
-    <div class="game-pool" id="poolList">
-        </div>
+    <div class="player-status-container">
+        <div class="section-title">WER ZOCKT WAS?</div>
+        <div id="playerList"></div>
+    </div>
+
+    <div class="grid" id="gameGrid"></div>
 
     <script>
+        // Matrix Animation (wie in index.html)
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const letters = "010101";
+        const fontSize = 16;
+        const drops = Array(Math.floor(canvas.width/fontSize)).fill(1);
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00ff41"; ctx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 35);
+
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -68,75 +112,68 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const poolRef = db.ref('game_pool');
+        const playersRef = db.ref('players');
+        const gameRef = db.ref('current_game');
         const auth = firebase.auth();
 
-        // Admin Status Check
-        auth.onAuthStateChanged(user => {
-            window.isAdmin = !!user;
-            document.getElementById('authStatus').innerText = user ? "ADMIN ANGEMELDET" : "GAST MODUS";
-            document.getElementById('adminInfo').style.display = user ? "block" : "none";
-            loadPool(); // Liste neu zeichnen um Delete-Buttons zu zeigen/verstecken
-        });
+        let nickname = localStorage.getItem('lan_nickname') || "Neo_" + Math.floor(Math.random()*100);
 
-        // Spiel hinzufügen
-        function addGame() {
-            const title = document.getElementById('newGameTitle').value.trim();
-            if (title === "") return;
-            
-            // Neues Spiel mit eindeutiger ID speichern
-            poolRef.push({
-                title: title,
-                addedBy: localStorage.getItem('lan_nickname') || "Anonym"
-            });
-            
-            document.getElementById('newGameTitle').value = "";
-        }
-
-        // Pool laden & Synchronisieren
-        function loadPool() {
-            poolRef.on('value', snapshot => {
-                const list = document.getElementById('poolList');
-                list.innerHTML = "";
-                const data = snapshot.val();
-                
-                if (data) {
-                    Object.keys(data).forEach(id => {
-                        const game = data[id];
-                        const div = document.createElement('div');
-                        div.className = "game-item";
-                        div.innerHTML = `
-                            <span>${game.title}</span>
-                            <span class="delete-btn" id="del-${id}" onclick="event.stopPropagation(); deleteGame('${id}')"> [X] </span>
-                        `;
-                        
-                        // Admin Lösch-Button anzeigen
-                        if (window.isAdmin) {
-                            setTimeout(() => {
-                                const btn = document.getElementById(`del-${id}`);
-                                if (btn) btn.style.display = "block";
-                            }, 10);
-                        }
-
-                        // Bei Klick als "Aktiv" setzen (wie in der Hauptseite)
-                        div.onclick = () => {
-                            db.ref('current_game').set({ title: game.title, img: "" });
-                            db.ref('players').child(localStorage.getItem('lan_nickname')).set(game.title);
-                            alert(game.title + " wurde als aktives Spiel gesetzt!");
-                        };
-
-                        list.appendChild(div);
-                    });
-                }
-            });
-        }
-
-        function deleteGame(id) {
-            if (confirm("Dieses Spiel wirklich aus dem Pool entfernen?")) {
-                poolRef.child(id).remove();
+        // SPIEL ZU DB HINZUFÜGEN
+        function addGameToPool() {
+            const val = document.getElementById('newGameInput').value.trim();
+            if(val) {
+                poolRef.push({ title: val });
+                document.getElementById('newGameInput').value = "";
             }
         }
 
-        window.onload = loadPool;
+        // POOL LADEN
+        poolRef.on('value', s => {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            const data = s.val();
+            if(data) {
+                Object.keys(data).forEach(id => {
+                    const game = data[id];
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
+                    card.innerHTML = `${del}<div>${game.title}</div>`;
+                    card.onclick = () => {
+                        gameRef.set({ title: game.title, isPause: false });
+                        playersRef.child(nickname).set(game.title);
+                    };
+                    grid.appendChild(card);
+                });
+            }
+        });
+
+        // SPIELERLISTE LADEN (Tabelle)
+        playersRef.on('value', s => {
+            const p = s.val(); const l = document.getElementById('playerList');
+            l.innerHTML = '';
+            if (p) {
+                Object.keys(p).forEach(name => {
+                    const row = document.createElement('div'); row.className = 'player-row';
+                    let del = window.isAdmin ? `<span class="admin-delete" style="position:static; margin-left:15px;" onclick="firebase.database().ref('players').child('${name}').remove()">×</span>` : "";
+                    row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span>${del}`;
+                    l.appendChild(row);
+                });
+            }
+        });
+
+        // ADMIN CHECK
+        auth.onAuthStateChanged(user => {
+            window.isAdmin = !!user;
+            document.getElementById('syncStatus').innerText = user ? "[ADMIN LOGGED IN]" : "[PROTOTYPE GUEST]";
+        });
+
+        function changeName() {
+            let n = prompt("NICKNAME:", nickname);
+            if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
+        }
+
+        function setPause() { gameRef.set({ isPause: true }); playersRef.child(nickname).set("PAUSE"); }
     </script>
 </body>
 </html>
