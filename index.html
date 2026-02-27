@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE FINAL</title>
+    <title>LAN 2026 | PROTOTYPE FINAL + NEWS</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -15,6 +15,7 @@
             --matrix-dark: #000800; 
             --danger: #ff4b2b; 
             --pause-blue: #008cff; 
+            --news-yellow: #ffcc00;
         }
 
         body { 
@@ -36,6 +37,17 @@
         }
         #authModal input { width: 100%; margin: 10px 0; padding: 12px; background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); border-radius: 8px; box-sizing: border-box; }
 
+        /* News Box */
+        .news-box { 
+            width: 100%; max-width: 700px; background: rgba(50, 40, 0, 0.9); 
+            border: 2px solid var(--news-yellow); color: var(--news-yellow); 
+            padding: 15px; margin-bottom: 20px; border-radius: 15px; 
+            text-align: center; font-weight: bold; display: none;
+            box-shadow: 0 0 20px var(--news-yellow);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+
         /* Navigation */
         .header-nav { width: 100%; max-width: 800px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; gap: 10px; }
         .nav-right { display: flex; gap: 8px; }
@@ -45,8 +57,12 @@
         .btn-pause { color: var(--pause-blue); border-color: var(--pause-blue); }
         .btn-pause:hover { background: var(--pause-blue); color: black; }
 
+        /* Admin News Input */
+        .admin-news-area { width: 100%; max-width: 700px; padding: 15px; background: rgba(0, 30, 0, 0.9); border: 1px solid var(--matrix-green); border-radius: 15px; margin-bottom: 20px; display: none; }
+        .admin-news-area input { width: 70%; background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 8px; border-radius: 8px; }
+
         /* Add Game Area */
-        .add-game-container { width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); border: 1px solid var(--matrix-green); border-radius: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 0 15px rgba(0,255,65,0.1); }
+        .add-game-container { width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); border: 1px solid var(--matrix-green); border-radius: 15px; margin-bottom: 20px; text-align: center; }
         .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; margin: 5px; border-radius: 8px; }
         #newGameInput { width: 45%; }
         #newGameAbbr { width: 25%; text-align: center; font-weight: bold; }
@@ -77,6 +93,8 @@
 
     <canvas id="matrixCanvas"></canvas>
 
+    <div class="news-box" id="globalNews"></div>
+
     <div class="header-nav">
         <div id="syncStatus" style="font-weight: bold; letter-spacing: 2px;">[SYSTEM_ONLINE]</div>
         <div class="nav-right">
@@ -85,6 +103,13 @@
             <button class="btn-matrix btn-pause" onclick="setPause()">PAUSE</button>
             <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
         </div>
+    </div>
+
+    <div class="admin-news-area" id="adminNewsControl">
+        <div style="font-size: 0.7rem; margin-bottom: 8px;">BROADCAST SENDEN:</div>
+        <input type="text" id="newsInput" placeholder="Nachricht für alle...">
+        <button class="btn-matrix" onclick="updateNews()" style="border-color: var(--news-yellow); color: var(--news-yellow);">SENDEN</button>
+        <button class="btn-matrix" onclick="clearNews()" style="border-color: var(--danger); color: var(--danger); font-size: 0.6rem;">X</button>
     </div>
 
     <div id="authModal">
@@ -110,11 +135,10 @@
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // --- MATRIX ANIMATION (DEUTLICHER & GRÖSSER) ---
+        // --- MATRIX ANIMATION ---
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-
         const letters = "01";
         const fontSize = 20; 
         const columns = Math.floor(canvas.width / fontSize);
@@ -125,7 +149,6 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#00ff41"; 
             ctx.font = "bold " + fontSize + "px monospace";
-
             for (let i = 0; i < drops.length; i++) {
                 const text = letters.charAt(Math.floor(Math.random() * letters.length));
                 ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -151,6 +174,7 @@
         const auth = firebase.auth();
         const poolRef = db.ref('game_pool');
         const playersRef = db.ref('players');
+        const newsRef = db.ref('admin_news');
 
         let nickname = localStorage.getItem('lan_nickname') || "User_" + Math.floor(Math.random()*100);
 
@@ -168,15 +192,30 @@
             window.isAdmin = !!user;
             document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
             document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
+            document.getElementById('adminNewsControl').style.display = user ? 'block' : 'none';
         });
 
-        // Pause Funktion
+        // News Funktionen
+        function updateNews() {
+            const msg = document.getElementById('newsInput').value;
+            if(msg) newsRef.set(msg);
+        }
+        function clearNews() { newsRef.remove(); }
+        newsRef.on('value', s => {
+            const box = document.getElementById('globalNews');
+            if(s.val()) {
+                box.innerText = ">>> " + s.val() + " <<<";
+                box.style.display = "block";
+            } else {
+                box.style.display = "none";
+            }
+        });
+
+        // Pause & Game Pool
         function setPause() {
             db.ref('current_game').update({ title: "--- PAUSE ---", isPause: true });
             playersRef.child(nickname).set("PAUSE");
         }
-
-        // Spiel hinzufügen
         function addGameToPool() {
             const title = document.getElementById('newGameInput').value.trim();
             const abbr = document.getElementById('newGameAbbr').value.trim();
@@ -187,24 +226,21 @@
             }
         }
 
-        // Render Spiele Grid
+        // Realtime Render
         poolRef.on('value', snapshot => {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
             const data = snapshot.val();
             if(!data) return;
-
             Object.keys(data).forEach(id => {
                 const game = data[id];
                 const card = document.createElement('div');
                 card.className = 'card';
                 let del = window.isAdmin ? `<span class="admin-del-btn" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                
                 let headerContent = (game.img && game.img !== "") 
                     ? `<img src="${game.img}" onerror="this.parentElement.innerHTML='<div class=\'abbr-style\'>${game.abbr || '???'}</div>'">` 
                     : `<div class="abbr-style">${game.abbr || 'GAME'}</div>`;
-
-                card.innerHTML = `${del}<div class="card-header">${headerContent}</div><div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5; text-transform:uppercase;">SOURCE: ${game.user || 'SYSTEM'}</span></div>`;
+                card.innerHTML = `${del}<div class="card-header">${headerContent}</div><div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5;">SOURCE: ${game.user || 'SYSTEM'}</span></div>`;
                 card.onclick = () => {
                     db.ref('current_game').set({ title: game.title, img: game.img || "" });
                     playersRef.child(nickname).set(game.title);
@@ -213,7 +249,6 @@
             });
         });
 
-        // Render Spielerliste
         playersRef.on('value', s => {
             const l = document.getElementById('playerList');
             l.innerHTML = '';
