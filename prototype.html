@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE MATRIX</title>
+    <title>LAN 2026 | PROTOTYPE STABLE</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -21,37 +21,36 @@
         #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; }
 
         .header-nav { width: 100%; max-width: 700px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; }
-        .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        .btn-matrix:hover { background: var(--matrix-green); color: black; }
+        .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 8px; text-transform: uppercase; }
 
         .add-game-container {
             width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); 
             border: 1px solid var(--matrix-green); border-radius: 15px; margin-bottom: 20px; text-align: center;
         }
-        .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; }
+        .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; border-radius: 8px; }
 
         .player-status-container { 
             width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); 
             border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); 
         }
-        .section-title { text-align: center; font-size: 1.5rem; color: var(--matrix-green); margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 0 10px var(--matrix-green); }
+        .section-title { text-align: center; font-size: 1.5rem; color: var(--matrix-green); margin-bottom: 20px; letter-spacing: 5px; }
 
         .player-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0, 255, 65, 0.3); }
         .player-name { color: white; flex: 1; font-weight: bold; }
-        .player-game { color: var(--matrix-green); flex: 2; text-align: center; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 20px; }
+        
+        /* Runde Ecken für die Karten */
         .card { 
             background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); 
-            padding: 20px; text-align: center; cursor: pointer; position: relative; transition: 0.3s;
+            border-radius: 12px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s;
         }
-        .card:hover { box-shadow: 0 0 15px var(--matrix-green); background: rgba(0, 40, 0, 1); }
-        .suggested-by { font-size: 0.6rem; color: #888; margin-top: 5px; text-transform: uppercase; }
-        
-        /* Markierung für Grundspiele */
-        .card.core-game { border-style: double; border-width: 3px; }
+        .card img { width: 100%; height: 120px; object-fit: cover; border-bottom: 1px solid var(--matrix-green); }
+        .card-info { padding: 10px; }
+        .card:hover { box-shadow: 0 0 15px var(--matrix-green); transform: translateY(-5px); }
 
-        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; }
+        .suggested-by { font-size: 0.6rem; color: #888; margin-top: 5px; }
+        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.5); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -60,45 +59,40 @@
 
     <div class="header-nav">
         <div id="syncStatus">[MATRIX CONNECTED]</div>
-        <div>
-            <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
-        </div>
+        <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
     </div>
 
     <div class="add-game-container">
-        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUES PROGRAMM IN DEN POOL SPEISEN</div>
-        <input type="text" id="newGameInput" placeholder="TITEL...">
+        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUER VORSCHLAG</div>
+        <input type="text" id="newGameInput" placeholder="SPIELNAME...">
         <button class="btn-matrix" onclick="addGameToPool()">ADD</button>
     </div>
 
     <div class="player-status-container">
-        <div class="section-title">WER ZOCKT WAS?</div>
+        <div class="section-title">STATUS ÜBERSICHT</div>
         <div id="playerList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // Matrix Animation
+        // Matrix Rain
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const letters = "010101";
-        const fontSize = 16;
-        const drops = Array(Math.floor(canvas.width/fontSize)).fill(1);
+        const drops = Array(Math.floor(canvas.width/16)).fill(1);
         function drawMatrix() {
             ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#00ff41"; ctx.font = fontSize + "px monospace";
-            for (let i = 0; i < drops.length; i++) {
-                const text = letters.charAt(Math.floor(Math.random() * letters.length));
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            ctx.fillStyle = "#00ff41"; ctx.font = "16px monospace";
+            drops.forEach((y, i) => {
+                ctx.fillText("01", i * 16, y * 16);
+                if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
-            }
+            });
         }
         setInterval(drawMatrix, 35);
 
-        // Firebase Setup
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -112,13 +106,27 @@
         const db = firebase.database();
         const poolRef = db.ref('game_pool');
         const playersRef = db.ref('players');
-        const gameRef = db.ref('current_game');
         const auth = firebase.auth();
 
-        let nickname = localStorage.getItem('lan_nickname') || "Neo_" + Math.floor(Math.random()*100);
+        let nickname = localStorage.getItem('lan_nickname') || "User_" + Math.floor(Math.random()*100);
 
-        // Die unveränderlichen Grundspiele
-        const coreGames = ["The Finals", "Warcraft 3", "CS 1.6", "Quake 3", "Flatout 2", "World War Z", "Trackmania", "Serious Sam 2", "Blobby Volley", "C&C 3", "Dead Island 2", "BF Vietnam", "Dead by Daylight", "Northgard"];
+        // Festgelegte Grundspiele mit korrekten Bildpfaden (relativ)
+        const coreGames = [
+            { title: "The Finals", img: "img/thefinals.jpg" },
+            { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
+            { title: "CS 1.6", img: "img/cs16.jpg" },
+            { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
+            { title: "Flatout 2", img: "img/Flatout2pc.jpg" },
+            { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
+            { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" },
+            { title: "Serious Sam 2", img: "img/Serious_Sam_II.jpg" },
+            { title: "Blobby Volley", img: "img/Blobby-volley-logo.png" },
+            { title: "C&C 3", img: "img/Command_&_Conquer_Tiberium_Wars_Logo.jpg" },
+            { title: "Dead Island 2", img: "img/Dead_Island_2_cover_art.jpg" },
+            { title: "BF Vietnam", img: "img/Battlefield_Vietnam_Coverart.png" },
+            { title: "Dead by Daylight", img: "img/Dead_by_Daylight_Logo.png" },
+            { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
+        ];
 
         function addGameToPool() {
             const val = document.getElementById('newGameInput').value.trim();
@@ -128,62 +136,63 @@
             }
         }
 
-        // --- KOMBINIERTER POOL LADEN ---
-        poolRef.on('value', s => {
+        // Render-Logik: Grundspiele + Firebase Vorschläge
+        poolRef.on('value', snapshot => {
             const grid = document.getElementById('gameGrid');
-            grid.innerHTML = ''; // Liste leeren
-            
-            // 1. Grundspiele anzeigen (aus dem lokalen Array)
-            coreGames.forEach(title => {
+            grid.innerHTML = ''; 
+
+            // 1. Grundspiele rendern
+            coreGames.forEach(game => {
                 const card = document.createElement('div');
-                card.className = 'card core-game';
-                card.innerHTML = `<div>${title}</div><div class="suggested-by">CORE SYSTEM</div>`;
-                card.onclick = () => {
-                    gameRef.set({ title: title, isPause: false });
-                    playersRef.child(nickname).set(title);
-                };
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x120?text=No+Image'">
+                    <div class="card-info">
+                        <strong>${game.title}</strong><br>
+                        <span class="suggested-by">SYSTEM CORE</span>
+                    </div>
+                `;
+                card.onclick = () => db.ref('current_game').set({ title: game.title });
                 grid.appendChild(card);
             });
 
-            // 2. Zusatzspiele aus Firebase anzeigen (hinten dran)
-            const data = s.val();
+            // 2. Vorschläge aus Firebase rendern
+            const data = snapshot.val();
             if(data) {
                 Object.keys(data).forEach(id => {
                     const game = data[id];
                     const card = document.createElement('div');
                     card.className = 'card';
                     let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                    card.innerHTML = `${del}<div>${game.title}</div><div class="suggested-by">FROM: ${game.user || 'ANON'}</div>`;
-                    card.onclick = () => {
-                        gameRef.set({ title: game.title, isPause: false });
-                        playersRef.child(nickname).set(game.title);
-                    };
+                    card.innerHTML = `
+                        ${del}
+                        <div style="height:120px; display:flex; align-items:center; justify-content:center; background:#001100; font-size:2rem;">?</div>
+                        <div class="card-info">
+                            <strong>${game.title}</strong><br>
+                            <span class="suggested-by">USER: ${game.user || 'ANON'}</span>
+                        </div>
+                    `;
+                    card.onclick = () => db.ref('current_game').set({ title: game.title });
                     grid.appendChild(card);
                 });
             }
         });
 
-        // SPIELERLISTE (Tabelle)
         playersRef.on('value', s => {
-            const p = s.val(); const l = document.getElementById('playerList');
+            const l = document.getElementById('playerList');
             l.innerHTML = '';
-            if (p) {
-                Object.keys(p).forEach(name => {
+            if (s.val()) {
+                Object.keys(s.val()).forEach(name => {
                     const row = document.createElement('div'); row.className = 'player-row';
-                    let del = window.isAdmin ? `<span class="admin-delete" style="position:static; margin-left:15px;" onclick="firebase.database().ref('players').child('${name}').remove()">×</span>` : "";
-                    row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span>${del}`;
+                    row.innerHTML = `<span class="player-name">${name}</span><span>${s.val()[name]}</span>`;
                     l.appendChild(row);
                 });
             }
         });
 
-        auth.onAuthStateChanged(user => {
-            window.isAdmin = !!user;
-            document.getElementById('syncStatus').innerText = user ? "[ADMIN ACCESS]" : "[MATRIX GUEST]";
-        });
-
+        auth.onAuthStateChanged(user => { window.isAdmin = !!user; });
         function changeName() {
-            let n = prompt("NICKNAME:", nickname);
+            let n = prompt("NAME:", nickname);
             if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
         }
     </script>
