@@ -3,70 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN PARTY 2026 Dashboard</title>
+    <title>LAN 2026 | Active Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; }
-        .hero { background: linear-gradient(rgba(15,23,42,0.8), rgba(15,23,42,0.8)), url('http://googleusercontent.com/image_collection/image_retrieval/2627066752429888466_0'); background-size: cover; background-position: center; padding: 80px 20px; text-align: center; border-bottom: 3px solid var(--primary); }
-        h1 { font-size: 3.5rem; margin: 0; color: var(--primary); text-shadow: 0 0 20px rgba(0,255,204,0.5); font-weight: 900; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; max-width: 1400px; margin: -40px auto 40px; padding: 0 20px; }
-        .card { background: var(--card); border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid #334155; transition: 0.3s; position: relative; }
-        .card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 15px 35px rgba(0,255,204,0.2); }
-        .card-img { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #334155; }
-        .card-content { padding: 20px; }
-        .day-tag { position: absolute; top: 12px; left: 12px; background: var(--accent); color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .time-info { color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.9rem; }
-        .game-title { font-size: 1.25rem; margin: 0; line-height: 1.2; color: #fff; }
-        footer { text-align: center; padding: 60px 20px; color: #64748b; font-size: 0.9rem; background: #0b1120; }
-        .status-dot { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --accent: #ff0055; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; overflow-x: hidden; }
+
+        /* Aktuelles Spiel Bereich */
+        .current-game-zone {
+            max-width: 800px;
+            margin: 20px auto 50px;
+            padding: 30px;
+            border: 3px dashed #334155;
+            border-radius: 20px;
+            text-align: center;
+            background: rgba(30, 41, 59, 0.5);
+            transition: 0.3s;
+            position: relative;
+        }
+        .current-game-zone.drag-over { border-color: var(--primary); background: rgba(0, 255, 204, 0.1); }
+        .current-game-zone h2 { color: var(--primary); margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
+        
+        #activeContent { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; }
+        #activeContent img { width: 300px; height: 180px; object-fit: cover; border-radius: 10px; box-shadow: 0 0 30px var(--primary); margin-bottom: 15px; }
+        #activeContent h3 { font-size: 2rem; margin: 0; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
+        /* Spiele Liste */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1400px; margin: auto; }
+        .card { 
+            background: var(--card); border-radius: 12px; overflow: hidden; 
+            cursor: grab; transition: 0.2s; border: 1px solid #334155; 
+            position: relative; user-select: none;
+        }
+        .card:active { cursor: grabbing; }
+        .card:hover { border-color: var(--primary); transform: scale(1.03); }
+        .card img { width: 100%; height: 120px; object-fit: cover; pointer-events: none; }
+        .card-title { padding: 10px; font-size: 0.9rem; text-align: center; font-weight: bold; }
+
+        .instruction { text-align: center; color: #64748b; margin-bottom: 10px; font-style: italic; }
     </style>
 </head>
 <body>
 
-<div class="hero">
-    <h1>LAN PARTY 2026</h1>
-    <p><i class="fas fa-calendar-alt"></i> 06. MÄRZ - 08. MÄRZ | <i class="fas fa-microchip"></i> AUTHENTIC GAMING</p>
+<div class="current-game-zone" id="dropZone">
+    <h2><i class="fas fa-play"></i> JETZT GESPIELT</h2>
+    <div id="activeContent">
+        <p class="instruction">Zieh ein Spiel hierher...</p>
+        <i class="fas fa-gamepad style="font-size: 4rem; color: #334155;"></i>
+    </div>
 </div>
 
+<h2 style="text-align: center; color: #94a3b8; margin-top: 50px;">SPIELE-POOL</h2>
 <div class="grid" id="gameGrid"></div>
-
-<footer>
-    <p><span class="status-dot"></span> Server Status: Online | <i class="fab fa-github"></i> Hosted via GitHub Pages</p>
-    <p>Um den Plan für alle zu ändern, bearbeite die Liste im Code deines Repositories.</p>
-</footer>
 
 <script>
     const games = [
-        { d: "FREITAG", t: "18:00", title: "The Finals", img: "http://googleusercontent.com/image_collection/image_retrieval/2627066752429888466_0" },
-        { d: "FREITAG", t: "20:00", title: "Warcraft 3", img: "http://googleusercontent.com/image_collection/image_retrieval/560198653056371871_0" },
-        { d: "FREITAG", t: "22:00", title: "CS 1.6", img: "http://googleusercontent.com/image_collection/image_retrieval/5481325143750761011_0" },
-        { d: "SAMSTAG", t: "10:00", title: "Quake 3 Arena", img: "http://googleusercontent.com/image_collection/image_retrieval/15411003116955356391_0" },
-        { d: "SAMSTAG", t: "12:00", title: "Flatout 2", img: "http://googleusercontent.com/image_collection/image_retrieval/1415768087776015083_0" },
-        { d: "SAMSTAG", t: "14:00", title: "World War Z", img: "http://googleusercontent.com/image_collection/image_retrieval/376117350268699046_0" },
-        { d: "SAMSTAG", t: "16:00", title: "Trackmania", img: "http://googleusercontent.com/image_collection/image_retrieval/7493433709224535111_0" },
-        { d: "SAMSTAG", t: "18:00", title: "Serious Sam 2", img: "http://googleusercontent.com/image_collection/image_retrieval/6616305141977383674_0" },
-        { d: "SAMSTAG", t: "20:00", title: "Blobby Volley", img: "http://googleusercontent.com/image_collection/image_retrieval/6861931859787688986_0" },
-        { d: "SAMSTAG", t: "22:00", title: "C&C 3 Tiberium Wars", img: "http://googleusercontent.com/image_collection/image_retrieval/14087116026112456831_0" },
-        { d: "SONNTAG", t: "00:00", title: "Dead Island 2", img: "http://googleusercontent.com/image_collection/image_retrieval/18272882639693264384_0" },
-        { d: "SONNTAG", t: "08:00", title: "Battlefield Vietnam", img: "http://googleusercontent.com/image_collection/image_retrieval/16516434249527619125_0" },
-        { d: "SONNTAG", t: "10:00", title: "Dead by Daylight", img: "http://googleusercontent.com/image_collection/image_retrieval/6808357615345433961_0" },
-        { d: "SONNTAG", t: "12:00", title: "Northgard", img: "http://googleusercontent.com/image_collection/image_retrieval/8770647899034848472_0" }
-    ];
-
-    const grid = document.getElementById('gameGrid');
-    games.forEach(g => {
-        grid.innerHTML += `
-            <div class="card">
-                <span class="day-tag">${g.d}</span>
-                <img src="${g.img}" class="card-img" alt="${g.title}" onerror="this.src='https://via.placeholder.com/400x200?text=Game+Image'">
-                <div class="card-content">
-                    <span class="time-info"><i class="far fa-clock"></i> ${g.t} - ${parseInt(g.t)+2 === 24 ? "00" : parseInt(g.t)+2}:00 Uhr</span>
-                    <h2 class="game-title">${g.title}</h2>
-                </div>
-            </div>
-        `;
-    });
-</script>
-</body>
-</html>
+        { title: "The Finals", img: "http://googleusercontent.com/image_collection/image_retrieval/2627066752429888466_0" },
+        { title: "Warcraft 3", img: "http://googleusercontent.com/image_collection/image_retrieval/560198653056371871_0" },
+        { title: "CS 1.6", img: "http://googleusercontent.com/image_collection/image_retrieval/5481325143750761011_0" },
+        { title: "Quake 3 Arena", img: "http://googleusercontent.com/image_collection/image_retrieval/15411003116955356391_0" },
+        { title: "Flatout 2", img: "http://googleusercontent.com/image_collection/image_retrieval/1415768087776015083_0" },
+        { title: "World War Z", img: "
