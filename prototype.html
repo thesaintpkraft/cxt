@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE V5 ADMIN</title>
+    <title>LAN 2026 | PROTOTYPE V5 ADMIN+</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -35,8 +35,10 @@
         #newGameAbbr { width: 25%; text-align: center; font-weight: bold; }
 
         /* Tabelle Wer zockt was */
-        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); }
-
+        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 15px rgba(0,255,65,0.2); }
+        .player-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(0,255,65,0.1); }
+        .player-row:last-child { border-bottom: none; }
+        
         /* Grid & Cards */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; }
         .card { background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); border-radius: 15px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s; height: 190px; }
@@ -45,7 +47,6 @@
         .card-header { width: 100%; height: 110px; display: flex; align-items: center; justify-content: center; background: #001000; border-bottom: 1px solid var(--matrix-green); overflow: hidden; position: relative; }
         .card-header img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Diagonales Kürzel */
         .abbr-style { 
             font-size: 1.8rem; font-weight: 900; color: var(--matrix-green); 
             transform: rotate(-15deg); text-transform: uppercase; letter-spacing: 2px;
@@ -54,12 +55,14 @@
 
         .card-info { padding: 10px; font-size: 0.8rem; line-height: 1.2; }
         
-        /* Admin Lösch-Button */
-        .admin-delete { 
-            color: var(--danger); cursor: pointer; position: absolute; top: 5px; right: 8px; 
-            font-weight: bold; background: rgba(0,0,0,0.8); border-radius: 50%; width: 25px; height: 25px; 
-            display: flex; align-items: center; justify-content: center; z-index: 50; border: 1px solid var(--danger); 
+        /* Universal Admin Lösch-Button Style */
+        .admin-del-btn { 
+            color: var(--danger); cursor: pointer; font-weight: bold; 
+            background: rgba(0,0,0,0.8); border-radius: 50%; width: 22px; height: 22px; 
+            display: flex; align-items: center; justify-content: center; border: 1px solid var(--danger);
+            font-size: 0.8rem;
         }
+        .card .admin-del-btn { position: absolute; top: 5px; right: 8px; z-index: 50; width: 25px; height: 25px; }
     </style>
 </head>
 <body>
@@ -91,6 +94,7 @@
     </div>
 
     <div class="player-status-container">
+        <div style="text-align:center; font-size: 0.7rem; letter-spacing: 3px; margin-bottom: 10px; opacity: 0.7;">ACTIVE_USERS.LOG</div>
         <div id="playerList"></div>
     </div>
 
@@ -113,7 +117,7 @@
         }
         setInterval(drawMatrix, 35);
 
-        // Firebase Config
+        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -131,30 +135,20 @@
 
         let nickname = localStorage.getItem('lan_nickname') || "User_" + Math.floor(Math.random()*100);
 
-        // --- ADMIN AUTH LOGIK ---
+        // Admin Auth
         function openAuthModal() { document.getElementById('authModal').style.display = 'block'; }
         function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
-        
         function handleAuth() {
             const email = document.getElementById('authEmail').value;
             const pass = document.getElementById('authPass').value;
-            auth.signInWithEmailAndPassword(email, pass)
-                .then(() => {
-                    closeAuthModal();
-                    location.reload(); // Seite neu laden, um Listener mit Admin-Status zu starten
-                })
-                .catch(err => alert("Login fehlgeschlagen: " + err.message));
+            auth.signInWithEmailAndPassword(email, pass).then(() => { closeAuthModal(); location.reload(); }).catch(err => alert(err.message));
         }
-
-        function doLogout() { 
-            auth.signOut().then(() => location.reload()); 
-        }
+        function doLogout() { auth.signOut().then(() => location.reload()); }
 
         auth.onAuthStateChanged(user => {
             window.isAdmin = !!user;
             document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
             document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
-            document.getElementById('syncStatus').innerText = user ? "[ADMIN ACCESS]" : "[MATRIX POOL]";
         });
 
         // Spiel hinzufügen
@@ -162,18 +156,13 @@
             const title = document.getElementById('newGameInput').value.trim();
             const abbr = document.getElementById('newGameAbbr').value.trim();
             if(title) {
-                poolRef.push({ 
-                    title: title, 
-                    abbr: abbr || title.substring(0, 3), 
-                    user: nickname 
-                }).then(() => {
-                    document.getElementById('newGameInput').value = "";
-                    document.getElementById('newGameAbbr').value = "";
-                });
+                poolRef.push({ title: title, abbr: abbr || title.substring(0, 3), user: nickname });
+                document.getElementById('newGameInput').value = "";
+                document.getElementById('newGameAbbr').value = "";
             }
         }
 
-        // Live Render
+        // Spiele Grid Live Render
         poolRef.on('value', snapshot => {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
@@ -184,26 +173,13 @@
                 const game = data[id];
                 const card = document.createElement('div');
                 card.className = 'card';
+                let del = window.isAdmin ? `<span class="admin-del-btn" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
                 
-                // Admin Delete Button anzeigen, falls eingeloggt
-                let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                
-                let headerContent = '';
-                if(game.img && game.img !== "") {
-                    headerContent = `<img src="${game.img}" onerror="this.parentElement.innerHTML='<div class=\'abbr-style\'>${game.abbr || '???'}</div>'">`;
-                } else {
-                    headerContent = `<div class="abbr-style">${game.abbr || 'GAME'}</div>`;
-                }
+                let headerContent = (game.img && game.img !== "") 
+                    ? `<img src="${game.img}" onerror="this.parentElement.innerHTML='<div class=\'abbr-style\'>${game.abbr || '???'}</div>'">` 
+                    : `<div class="abbr-style">${game.abbr || 'GAME'}</div>`;
 
-                card.innerHTML = `
-                    ${del}
-                    <div class="card-header">${headerContent}</div>
-                    <div class="card-info">
-                        <strong>${game.title}</strong><br>
-                        <span style="font-size:0.6rem;opacity:0.5;">SOURCE: ${game.user || 'SYSTEM'}</span>
-                    </div>
-                `;
-                
+                card.innerHTML = `${del}<div class="card-header">${headerContent}</div><div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5;">SOURCE: ${game.user || 'SYSTEM'}</span></div>`;
                 card.onclick = () => {
                     db.ref('current_game').set({ title: game.title, img: game.img || "" });
                     playersRef.child(nickname).set(game.title);
@@ -212,7 +188,7 @@
             });
         });
 
-        // Wer zockt was Liste
+        // Spielerliste Live Render + LÖSCHFUNKTION
         playersRef.on('value', s => {
             const l = document.getElementById('playerList');
             l.innerHTML = '';
@@ -220,9 +196,18 @@
             if (p) {
                 Object.keys(p).forEach(name => {
                     const row = document.createElement('div'); 
-                    row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.padding = "6px";
-                    row.style.borderBottom = "1px solid rgba(0,255,65,0.1)";
-                    row.innerHTML = `<span>${name}</span><span style="color:white">${p[name]}</span>`;
+                    row.className = 'player-row';
+                    
+                    // LÖSCH-BUTTON FÜR SPIELER (Nur Admin)
+                    let delPlayer = window.isAdmin ? `<span class="admin-del-btn" style="margin-left:15px;" onclick="firebase.database().ref('players').child('${name}').remove()">×</span>` : "";
+                    
+                    row.innerHTML = `
+                        <div style="display:flex; align-items:center;">
+                            <span style="color:var(--matrix-green); font-weight:bold; margin-right:15px;">${name}</span>
+                            <span style="color:white; font-size:0.9rem;">${p[name]}</span>
+                        </div>
+                        ${delPlayer}
+                    `;
                     l.appendChild(row);
                 });
             }
