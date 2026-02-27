@@ -10,18 +10,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 
     <style>
-        :root { 
-            --matrix-green: #00ff41; 
-            --matrix-dark: #000800; 
-            --danger: #ff4b2b; 
-        }
+        :root { --matrix-green: #00ff41; --matrix-dark: #000800; --danger: #ff4b2b; }
         
         body { 
-            font-family: 'Courier New', Courier, monospace; 
-            background: var(--matrix-dark); 
-            color: var(--matrix-green); 
-            margin: 0; padding: 20px; 
-            display: flex; flex-direction: column; align-items: center; 
+            font-family: 'Courier New', Courier, monospace; background: var(--matrix-dark); color: var(--matrix-green); 
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; 
             min-height: 100vh; overflow-x: hidden;
         }
 
@@ -31,30 +24,32 @@
         .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         .btn-matrix:hover { background: var(--matrix-green); color: black; }
 
-        /* NEU: Spiele hinzufügen Bereich */
         .add-game-container {
-            width: 100%; max-width: 700px; padding: 20px;
-            background: rgba(0, 20, 0, 0.9); border: 1px solid var(--matrix-green);
-            border-radius: 15px; margin-bottom: 20px; text-align: center;
+            width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); 
+            border: 1px solid var(--matrix-green); border-radius: 15px; margin-bottom: 20px; text-align: center;
         }
         .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; }
 
-        /* Wer zockt was Tabelle */
-        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); }
+        .player-status-container { 
+            width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); 
+            border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); 
+        }
         .section-title { text-align: center; font-size: 1.5rem; color: var(--matrix-green); margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 0 10px var(--matrix-green); }
 
         .player-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0, 255, 65, 0.3); }
         .player-name { color: white; flex: 1; font-weight: bold; }
         .player-game { color: var(--matrix-green); flex: 2; text-align: center; }
 
-        /* Spiele-Pool Gitter */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 20px; }
         .card { 
             background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); 
-            padding: 20px; text-align: center; cursor: pointer; position: relative;
+            padding: 20px; text-align: center; cursor: pointer; position: relative; transition: 0.3s;
         }
-        .card:hover { background: var(--matrix-green); color: black; }
+        .card:hover { box-shadow: 0 0 15px var(--matrix-green); background: rgba(0, 40, 0, 1); }
+        .suggested-by { font-size: 0.6rem; color: #888; margin-top: 5px; text-transform: uppercase; }
+        
         .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; }
+        #resetBtn { display: none; background: #300; border-color: var(--danger); color: var(--danger); margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -62,13 +57,16 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="header-nav">
-        <div id="syncStatus">[PROTOTYPE ACTIVE]</div>
-        <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
+        <div id="syncStatus">[MATRIX GUEST]</div>
+        <div>
+            <button id="resetBtn" class="btn-matrix" onclick="resetPool()">RESET POOL</button>
+            <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
+        </div>
     </div>
 
     <div class="add-game-container">
-        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">VORSCHLAG EINREICHEN</div>
-        <input type="text" id="newGameInput" placeholder="SPIELNAME...">
+        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUE DATEN EINSPEISEN</div>
+        <input type="text" id="newGameInput" placeholder="PROGRAMM-NAME...">
         <button class="btn-matrix" onclick="addGameToPool()">ADD</button>
     </div>
 
@@ -80,7 +78,7 @@
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // Matrix Animation (wie in index.html)
+        // Matrix Animation
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -99,7 +97,7 @@
         }
         setInterval(drawMatrix, 35);
 
-        // Firebase Config
+        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -118,12 +116,28 @@
 
         let nickname = localStorage.getItem('lan_nickname') || "Neo_" + Math.floor(Math.random()*100);
 
-        // SPIEL ZU DB HINZUFÜGEN
+        const defaultGames = ["The Finals", "Warcraft 3", "CS 1.6", "Quake 3", "Flatout 2", "World War Z", "Trackmania", "Serious Sam 2", "Blobby Volley", "C&C 3", "Dead Island 2", "BF Vietnam", "Dead by Daylight", "Northgard"];
+
+        function initPool() {
+            poolRef.once('value', s => {
+                if (!s.exists()) {
+                    defaultGames.forEach(title => poolRef.push({ title: title, user: "SYSTEM" }));
+                }
+            });
+        }
+
         function addGameToPool() {
             const val = document.getElementById('newGameInput').value.trim();
             if(val) {
-                poolRef.push({ title: val });
+                poolRef.push({ title: val, user: nickname });
                 document.getElementById('newGameInput').value = "";
+            }
+        }
+
+        function resetPool() {
+            if(confirm("POOL KOMPLETT LEEREN?")) {
+                poolRef.remove();
+                location.reload();
             }
         }
 
@@ -138,7 +152,7 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                    card.innerHTML = `${del}<div>${game.title}</div>`;
+                    card.innerHTML = `${del}<div>${game.title}</div><div class="suggested-by">FROM: ${game.user || 'SYSTEM'}</div>`;
                     card.onclick = () => {
                         gameRef.set({ title: game.title, isPause: false });
                         playersRef.child(nickname).set(game.title);
@@ -148,7 +162,7 @@
             }
         });
 
-        // SPIELERLISTE LADEN (Tabelle)
+        // SPIELERLISTE
         playersRef.on('value', s => {
             const p = s.val(); const l = document.getElementById('playerList');
             l.innerHTML = '';
@@ -162,10 +176,10 @@
             }
         });
 
-        // ADMIN CHECK
         auth.onAuthStateChanged(user => {
             window.isAdmin = !!user;
-            document.getElementById('syncStatus').innerText = user ? "[ADMIN LOGGED IN]" : "[PROTOTYPE GUEST]";
+            document.getElementById('syncStatus').innerText = user ? "[ADMIN ACCESS]" : "[MATRIX GUEST]";
+            document.getElementById('resetBtn').style.display = user ? "inline-block" : "none";
         });
 
         function changeName() {
@@ -173,7 +187,7 @@
             if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
         }
 
-        function setPause() { gameRef.set({ isPause: true }); playersRef.child(nickname).set("PAUSE"); }
+        window.onload = initPool;
     </script>
 </body>
 </html>
