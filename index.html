@@ -3,54 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | Live Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>LAN 2026 | Game Dashboard</title>
     <style>
-        :root { --primary: #00ffcc; --bg: #0b0f1a; --card: #161f33; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: var(--bg); 
+            color: white; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        /* Aktueller Spielbereich */
+        /* Obere Drop-Zone */
         .drop-zone {
-            max-width: 700px; margin: 0 auto 40px; padding: 30px;
-            border: 3px solid #1e293b; border-radius: 20px;
-            background: linear-gradient(145deg, #161f33, #0b0f1a);
-            text-align: center; min-height: 280px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 600px;
+            min-height: 250px;
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 3px dashed #334155;
+            border-radius: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .drop-zone.hover { border-color: var(--primary); background: rgba(0, 255, 204, 0.05); }
+        .drop-zone.hover { border-color: var(--primary); background: rgba(0, 255, 204, 0.1); }
         
-        #activeContent img { width: 100%; max-width: 450px; border-radius: 12px; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); }
-        #activeContent h3 { font-size: 2.2rem; color: var(--primary); margin: 15px 0 0; text-transform: uppercase; letter-spacing: 2px; }
+        #activeContent img { max-width: 100%; height: 200px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; }
+        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 10px 0 0; }
 
-        /* Spiele Pool */
+        /* Der Spiele Pool - Jetzt absolut sicher sichtbar */
+        .pool-container { width: 100%; max-width: 1200px; }
+        .pool-header { color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; text-align: center; }
+
         .grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-            gap: 15px; max-width: 1200px; margin: 0 auto; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+            gap: 15px; 
+            width: 100%;
         }
+
         .card { 
-            background: var(--card); border-radius: 10px; overflow: hidden; 
-            cursor: grab; border: 1px solid #2d3748; transition: 0.2s;
+            background: var(--card); 
+            border-radius: 8px; 
+            overflow: hidden; 
+            cursor: grab; 
+            border: 1px solid #334155;
+            transition: 0.2s;
+            height: 240px; /* Feste Höhe, damit die Karte immer existiert */
+            display: flex;
+            flex-direction: column;
         }
         .card:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .card img { width: 100%; height: 220px; object-fit: cover; pointer-events: none; }
-        .card-title { padding: 8px; font-size: 0.8rem; font-weight: bold; text-align: center; background: #1c2641; }
+        
+        .card img { 
+            width: 100%; 
+            height: 180px; 
+            object-fit: cover; 
+            background: #000; /* Schwarzer Hintergrund falls Bild lädt */
+            pointer-events: none; 
+        }
+        .card-title { 
+            padding: 8px; 
+            font-size: 0.85rem; 
+            font-weight: bold; 
+            text-align: center; 
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        .instruction { color: #475569; margin-top: 100px; }
+        .instruction { color: #475569; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="drop-zone" id="dropZone">
-    <h2 style="color:var(--primary); font-size: 1rem; letter-spacing: 3px;">CURRENTLY PLAYING</h2>
+    <h2 style="color:var(--primary); margin-top:0;">NOW PLAYING</h2>
     <div id="activeContent">
-        <p class="instruction">Spiel hierher ziehen...</p>
+        <p class="instruction">Zieh ein Spiel hierher...</p>
     </div>
 </div>
 
-<h3 style="text-align: center; color: #475569; text-transform: uppercase; letter-spacing: 2px;">Spiele-Pool</h3>
-<div class="grid" id="gameGrid"></div>
+<div class="pool-container">
+    <h3 class="pool-header">Spiele-Pool</h3>
+    <div class="grid" id="gameGrid">
+        </div>
+</div>
 
 <script>
     const games = [
         { title: "The Finals", img: "https://upload.wikimedia.org/wikipedia/en/0/09/The_Finals_cover_art.jpg" },
-        { title: "Warcraft 3", img: "
+        { title: "Warcraft 3", img: "https://upload.wikimedia.org/wikipedia/en/e/e3/Warcraft_III_-_Reign_of_Chaos_Cover_Art.jpg" },
+        { title: "CS 1.6", img: "https://upload.wikimedia.org/wikipedia/en/f/f0/Counter-Strike_1.6_retail_cover.jpg" },
+        { title: "Quake 3", img: "https://upload.wikimedia.org/wikipedia/en/d/d4/Quake_3_Arena_Box_Art.jpg" },
+        { title: "Flatout 2", img: "https://upload.wikimedia.org/wikipedia/en/9/93/FlatOut_2_cover_art.jpg" },
+        { title: "World War Z", img: "https://upload.wikimedia.org/wikipedia/en/6/69/World_War_Z_game_cover_art.jpg" },
+        { title: "Trackmania", img: "https://upload.wikimedia.org/wikipedia/en/c/cf/Trackmania_2020_cover_art.jpg" },
+        { title: "Serious Sam 2", img: "https://upload.wikimedia.org/wikipedia/en/a/ad/Serious_Sam_2_Cover_Art.jpg" },
+        { title: "Blobby Volley", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Blobby_Volley_2_Icon.png/256px-Blobby_Volley_2_Icon.png" },
+        { title: "C&C 3", img: "https://upload.wikimedia.org/wikipedia/en/e/e0/Command_%26_Conquer_3_Tiberium_Wars_Cover_Art.jpg" },
+        { title: "Dead Island 2", img: "https://upload.wikimedia.org/wikipedia/en/f/f2/Dead_Island_2_cover_art.jpg" },
+        { title: "BF Vietnam", img: "https://upload.wikimedia.org/wikipedia/en/0/00/Battlefield_Vietnam_Box_Art.jpg" },
+        { title: "Dead by Daylight", img: "https://upload.wikimedia.org/wikipedia/en/2/29/Dead_by_Daylight_cover_art.jpg" },
+        { title: "Northgard", img: "https://upload.wikimedia.org/wikipedia/en/e/ef/Northgard_cover_art.jpg" }
+    ];
+
+    const grid = document.getElementById('gameGrid');
+    const dropZone = document.getElementById('dropZone');
+
+    function init() {
+        // Pool rendern
+        grid.innerHTML = '';
+        games.forEach(game => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.draggable = true;
+            card.innerHTML = `
+                <img src="${game.img}" alt="${game.title}">
+                <div class="card-title">${game.title}</div>
+            `;
+            
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify(game));
+            });
+
+            grid.appendChild(card);
+        });
+
+        // Drop Logik
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('hover');
+        });
+
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('hover');
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            updateActive(data);
+        });
+
+        // Letztes Spiel laden
+        const last = localStorage.getItem('lan_current');
+        if(last) updateActive(JSON.parse(last));
+    }
+
+    function updateActive(game) {
+        document.getElementById('activeContent').innerHTML = `
+            <img src="${game.img}">
+            <h3>${game.title}</h3>
+        `;
+        localStorage.setItem('lan_current', JSON.stringify(game));
+    }
+
+    init();
+</script>
+</body>
+</html>
