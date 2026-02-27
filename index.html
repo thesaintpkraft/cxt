@@ -1,49 +1,96 @@
-const games = [
-        { title: "The Finals", img: "img/thefinals.jpg" },
-        { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
-        { title: "CS 1.6", img: "img/cs16.jpg" },
-        { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
-        { title: "Flatout 2", img: "img/Flatout2pc.jpg" },
-        { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
-        { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" },
-        { title: "Serious Sam 2", img: "img/Serious_Sam_II.jpg" },
-        { title: "Blobby Volley", img: "img/Blobby-volley-logo.png" },
-        { title: "C&C 3", img: "img/Command_&_Conquer_Tiberium_Wars_Logo.jpg" },
-        { title: "Dead Island 2", img: "img/Dead_Island_2_cover_art.jpg" },
-        { title: "BF Vietnam", img: "img/Battlefield_Vietnam_Coverart.png" },
-        { title: "Dead by Daylight", img: "img/Dead_by_Daylight_Logo.png" },
-        { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
-    ];
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAN PARTY 2026 | Dashboard</title>
+    <style>
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .drop-zone { 
+            width: 100%; max-width: 600px; min-height: 250px; margin-bottom: 40px; padding: 20px; 
+            border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); 
+            text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        }
+        .drop-zone.hover { border-color: var(--primary); background: rgba(0, 255, 204, 0.1); }
+        
+        #activeContent img { max-width: 100%; height: 220px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; }
+        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 15px 0 0; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; }
+        
+        .card { 
+            background: var(--card); border-radius: 10px; overflow: hidden; cursor: grab; 
+            border: 1px solid #334155; transition: 0.2s; display: flex; flex-direction: column; 
+        }
+        .card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .card img { width: 100%; height: 200px; object-fit: cover; pointer-events: none; }
+        .card-title { padding: 10px; font-size: 0.85rem; font-weight: bold; text-align: center; background: #1c2641; }
+    </style>
+</head>
+<body>
 
-    const grid = document.getElementById('gameGrid');
-    const dropZone = document.getElementById('dropZone');
+    <div class="drop-zone" id="dropZone">
+        <h2 style="color:var(--primary); margin-top:0;">NOW PLAYING</h2>
+        <div id="activeContent">
+            <p style="color:#475569">Zieh ein Spiel hierher...</p>
+        </div>
+    </div>
 
-    function init() {
-        grid.innerHTML = '';
-        games.forEach(game => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.draggable = true;
-            card.innerHTML = `<img src="${game.img}" alt="${game.title}"><div class="card-title">${game.title}</div>`;
-            card.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', JSON.stringify(game)));
-            grid.appendChild(card);
-        });
+    <div class="grid" id="gameGrid"></div>
 
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('hover'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('hover');
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            updateActive(data);
-        });
+    <script>
+        const games = [
+            { title: "The Finals", img: "img/thefinals.jpg" },
+            { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
+            { title: "CS 1.6", img: "img/cs16.jpg" },
+            { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
+            { title: "Flatout 2", img: "img/Flatout2pc.jpg" },
+            { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
+            { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" },
+            { title: "Serious Sam 2", img: "img/Serious_Sam_II.jpg" },
+            { title: "Blobby Volley", img: "img/Blobby-volley-logo.png" },
+            { title: "C&C 3", img: "img/Command_&_Conquer_Tiberium_Wars_Logo.jpg" },
+            { title: "Dead Island 2", img: "img/Dead_Island_2_cover_art.jpg" },
+            { title: "BF Vietnam", img: "img/Battlefield_Vietnam_Coverart.png" },
+            { title: "Dead by Daylight", img: "img/Dead_by_Daylight_Logo.png" },
+            { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
+        ];
 
-        const last = localStorage.getItem('lan_now');
-        if(last) updateActive(JSON.parse(last));
-    }
+        const grid = document.getElementById('gameGrid');
+        const dropZone = document.getElementById('dropZone');
 
-    function updateActive(game) {
-        document.getElementById('activeContent').innerHTML = `<img src="${game.img}"><h3>${game.title}</h3>`;
-        localStorage.setItem('lan_now', JSON.stringify(game));
-    }
-    init();
+        function init() {
+            grid.innerHTML = '';
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.draggable = true;
+                card.innerHTML = `<img src="${game.img}" alt="${game.title}"><div class="card-title">${game.title}</div>`;
+                card.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', JSON.stringify(game)));
+                grid.appendChild(card);
+            });
+
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('hover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('hover');
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                updateActive(data);
+            });
+
+            const last = localStorage.getItem('lan_now');
+            if(last) updateActive(JSON.parse(last));
+        }
+
+        function updateActive(game) {
+            document.getElementById('activeContent').innerHTML = `<img src="${game.img}"><h3>${game.title}</h3>`;
+            localStorage.setItem('lan_now', JSON.stringify(game));
+        }
+
+        init();
+    </script>
+</body>
+</html>
