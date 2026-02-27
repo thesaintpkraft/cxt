@@ -13,7 +13,6 @@
         :root { 
             --matrix-green: #00ff41; 
             --matrix-dark: #000800; 
-            --primary: #00ffcc; 
             --danger: #ff4b2b; 
             --warning: #facc15; 
         }
@@ -27,58 +26,38 @@
             min-height: 100vh; overflow-x: hidden;
         }
 
-        /* Matrix Background Canvas */
-        #matrixCanvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; opacity: 0.15;
-        }
+        #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; }
 
-        /* Prominente Spieler-Sektion */
-        .player-status-container { 
-            width: 100%; max-width: 700px; 
-            margin: 20px 0 40px; 
-            background: rgba(0, 20, 0, 0.9); 
-            border-radius: 15px; 
-            padding: 25px; 
-            border: 2px solid var(--matrix-green); 
-            box-shadow: 0 0 20px var(--matrix-green);
+        /* Login Modal */
+        #authModal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: rgba(0, 10, 0, 0.95); padding: 30px; border: 2px solid var(--matrix-green); 
+            z-index: 1000; width: 320px; box-shadow: 0 0 30px var(--matrix-green);
         }
+        #authModal input { width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px; background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); }
         
-        .section-title {
-            text-align: center; font-size: 1.5rem; font-weight: 900;
-            color: var(--matrix-green); margin-bottom: 20px;
-            text-transform: uppercase; letter-spacing: 5px;
-            text-shadow: 0 0 10px var(--matrix-green);
-        }
-
-        .player-row { 
-            display: flex; align-items: center; padding: 12px 15px; 
-            border-bottom: 1px solid rgba(0, 255, 65, 0.3); 
-            font-size: 1.1rem;
-        }
-        .player-name { color: white; font-weight: bold; flex: 1; text-shadow: 0 0 5px var(--matrix-green); }
-        .player-game { color: var(--matrix-green); flex: 2; text-align: center; font-weight: bold; }
-
-        /* Restliche Styles */
         .header-nav { width: 100%; max-width: 700px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; }
-        .status-bar { font-size: 0.8rem; padding: 5px 15px; border-radius: 20px; background: black; border: 1px solid var(--matrix-green); }
         .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         .btn-matrix:hover { background: var(--matrix-green); color: black; }
 
-        .drop-zone { 
-            width: 100%; max-width: 700px; min-height: 250px; padding: 20px; 
-            border: 2px solid var(--matrix-green); border-radius: 20px; 
-            background: rgba(0, 10, 0, 0.85); text-align: center;
-        }
-        #activeContent img { max-width: 100%; height: 200px; border-radius: 10px; border: 1px solid var(--matrix-green); object-fit: contain; margin-bottom: 10px; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 40px; }
-        .card { background: black; border: 1px solid var(--matrix-green); border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; }
-        .card:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--matrix-green); }
-        .card img { width: 100%; height: 150px; object-fit: cover; filter: grayscale(50%) sepia(50%) hue-rotate(100deg); }
-        .card-title { padding: 10px; font-size: 0.8rem; text-align: center; color: var(--matrix-green); font-weight: bold; }
-        
+        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); }
+        .section-title { text-align: center; font-size: 1.5rem; color: var(--matrix-green); margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 0 10px var(--matrix-green); }
+
+        .player-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0, 255, 65, 0.3); }
+        .player-name { color: white; flex: 1; }
+        .player-game { color: var(--matrix-green); flex: 2; text-align: center; font-weight: bold; }
         .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.5rem; margin-left: 15px; }
+
+        /* Quake 3 Logo Fix: Weißer Hintergrund nur für dieses Bild */
+        img[src*="Quake_III"] { background: white; padding: 5px; border-radius: 5px; }
+
+        .drop-zone { width: 100%; max-width: 700px; min-height: 250px; padding: 20px; border: 2px solid var(--matrix-green); background: rgba(0, 10, 0, 0.85); text-align: center; }
+        #activeContent img { max-width: 100%; height: 200px; object-fit: contain; margin-bottom: 10px; border: 1px solid var(--matrix-green); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 40px; }
+        .card { background: black; border: 1px solid var(--matrix-green); overflow: hidden; cursor: pointer; }
+        .card img { width: 100%; height: 150px; object-fit: cover; filter: grayscale(100%) brightness(0.8) sepia(100%) hue-rotate(90deg); }
+        .card:hover img { filter: none; }
     </style>
 </head>
 <body>
@@ -86,11 +65,21 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="header-nav">
-        <div class="status-bar" id="syncStatus">SYSTEM ONLINE</div>
+        <div id="syncStatus" style="font-size: 0.8rem;">SYSTEM ONLINE</div>
         <div>
-            <button class="btn-matrix" onclick="openAuthModal('login')">LOGIN</button>
-            <button class="btn-matrix" style="margin-left:5px;" onclick="changeName()">USER</button>
+            <button id="loginBtn" class="btn-matrix" onclick="openAuthModal()">ADMIN LOGIN</button>
+            <button id="logoutBtn" class="btn-matrix" style="display:none; border-color: var(--danger); color: var(--danger);" onclick="doLogout()">LOGOUT</button>
+            <button class="btn-matrix" style="margin-left:5px;" onclick="changeName()">NICKNAME</button>
         </div>
+    </div>
+
+    <div id="authModal">
+        <h3 style="color:var(--matrix-green); text-align:center;">ACCESS REQUIRED</h3>
+        <input type="email" id="authEmail" placeholder="EMAIL">
+        <input type="password" id="authPass" placeholder="PASSWORD">
+        <button class="btn-matrix" style="width:100%; margin-top:10px;" onclick="handleAuth()">AUTHORIZE</button>
+        <p onclick="resetPassword()" style="font-size:0.7rem; text-align:center; cursor:pointer; margin-top:10px;">FORGOT PASSWORD?</p>
+        <p onclick="closeAuthModal()" style="font-size:0.7rem; text-align:center; cursor:pointer; color:var(--danger); margin-top:15px;">ABORT</p>
     </div>
 
     <div class="drop-zone">
@@ -99,28 +88,23 @@
     </div>
 
     <div class="player-status-container">
-        <div class="section-title">Wer zockt was?</div>
+        <div class="section-title">WER ZOCKT WAS?</div>
         <div id="playerList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // MATRIX ANIMATION
+        // Matrix Animation
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const letters = "01010101010101010101010101";
         const fontSize = 16;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
-
+        const drops = Array(Math.floor(canvas.width/fontSize)).fill(1);
         function drawMatrix() {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#00ff41";
-            ctx.font = fontSize + "px monospace";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00ff41"; ctx.font = fontSize + "px monospace";
             for (let i = 0; i < drops.length; i++) {
                 const text = letters.charAt(Math.floor(Math.random() * letters.length));
                 ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -130,7 +114,7 @@
         }
         setInterval(drawMatrix, 35);
 
-        // FIREBASE & LOGIK (Daten von dir übernommen)
+        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -140,18 +124,46 @@
             messagingSenderId: "1070535216863",
             appId: "1:1070535216863:web:3052c02bea67dc2881636a"
         };
-
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
         const playersRef = database.ref('players');
         const gameRef = database.ref('current_game');
 
         let nickname = localStorage.getItem('lan_nickname') || "Neo_" + Math.floor(Math.random()*100);
         localStorage.setItem('lan_nickname', nickname);
 
+        // AUTH FUNKTIONEN
+        function openAuthModal() { document.getElementById('authModal').style.display = 'block'; }
+        function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+        
+        function handleAuth() {
+            const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPass').value;
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => { closeAuthModal(); })
+                .catch(err => alert("ACCESS DENIED: " + err.message));
+        }
+
+        function doLogout() { auth.signOut(); }
+
+        function resetPassword() {
+            const email = document.getElementById('authEmail').value;
+            if(!email) return alert("ENTER EMAIL FIRST");
+            auth.sendPasswordResetEmail(email).then(() => alert("RESET LINK SENT"));
+        }
+
+        auth.onAuthStateChanged(user => {
+            window.isAdmin = !!user;
+            document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
+            document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
+            renderPlayerList(); // Liste neu laden um X anzuzeigen
+        });
+
+        // GAMES & SYNC
         const games = [
             { title: "The Finals", img: "img/thefinals.jpg" }, { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
-            { title: "CS 1.6", img: "img/cs16.jpg" }, { title: "Quake 3", img: "img/quake3.png" },
+            { title: "CS 1.6", img: "img/cs16.jpg" }, { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
             { title: "Flatout 2", img: "img/Flatout2pc.jpg" }, { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
             { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" }, { title: "Serious Sam 2", img: "img/Serious_Sam_II.jpg" },
             { title: "Blobby Volley", img: "img/Blobby-volley-logo.png" }, { title: "C&C 3", img: "img/Command_&_Conquer_Tiberium_Wars_Logo.jpg" },
@@ -170,31 +182,21 @@
             });
         }
 
-        playersRef.on('value', s => {
-            const p = s.val(); const l = document.getElementById('playerList');
-            l.innerHTML = '';
-            if (p) {
-                Object.keys(p).forEach(name => {
-                    const row = document.createElement('div'); row.className = 'player-row';
-                    row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span>`;
-                    l.appendChild(row);
-                });
-            }
-        });
+        function renderPlayerList() {
+            playersRef.on('value', s => {
+                const p = s.val(); const l = document.getElementById('playerList');
+                l.innerHTML = '';
+                if (p) {
+                    Object.keys(p).forEach(name => {
+                        const row = document.createElement('div'); row.className = 'player-row';
+                        let del = window.isAdmin ? `<span class="admin-delete" onclick="firebase.database().ref('players').child('${name}').remove()">×</span>` : "";
+                        row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span>${del}`;
+                        l.appendChild(row);
+                    });
+                }
+            });
+        }
 
         gameRef.on('value', s => {
             const d = s.val(); const c = document.getElementById('activeContent');
-            if(d) c.innerHTML = d.isPause ? `<div class="pause-banner">SYSTEM PAUSE</div>` : `<img src="${d.img}"><h3>${d.title}</h3>`;
-        });
-
-        function changeName() {
-            let n = prompt("ENTER NICKNAME:", nickname);
-            if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
-        }
-
-        window.onload = renderPool;
-    </script>
-</body>
-</html>
-
-
+            if(d) c.
