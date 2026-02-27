@@ -3,93 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN Party Zeitplan 2026</title>
+    <title>LAN PARTY 2026 Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; text-align: center; }
-        h1 { color: #00ffcc; text-shadow: 2px 2px #000; }
-        .container { max-width: 900px; margin: auto; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; background: #2d2d2d; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 15px; border: 1px solid #444; }
-        th { background: #333; color: #00ffcc; }
-        .game-img { width: 80px; height: 50px; object-fit: cover; border-radius: 5px; background: #444; }
-        [contenteditable="true"]:hover { background: #3d3d3d; outline: 1px solid #00ffcc; cursor: pointer; }
-        .btn-reset { margin-top: 20px; padding: 10px; background: #ff4444; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; }
+        .hero { background: linear-gradient(rgba(15,23,42,0.8), rgba(15,23,42,0.8)), url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070'); background-size: cover; padding: 60px 20px; text-align: center; border-bottom: 3px solid var(--primary); }
+        h1 { font-size: 3.5rem; margin: 0; color: var(--primary); text-shadow: 0 0 20px rgba(0,255,204,0.5); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; max-width: 1400px; margin: -40px auto 40px; padding: 0 20px; }
+        .card { background: var(--card); border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid #334155; transition: 0.3s; position: relative; }
+        .card:hover { transform: translateY(-10px); border-color: var(--primary); }
+        .card-img { width: 100%; height: 180px; object-fit: cover; }
+        .card-content { padding: 20px; }
+        .day-tag { position: absolute; top: 10px; left: 10px; background: var(--accent); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .time-info { color: var(--primary); font-weight: bold; display: block; margin-bottom: 10px; }
+        .game-title { font-size: 1.3rem; margin: 0; }
+        footer { text-align: center; padding: 40px; color: #64748b; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>LAN PARTY PLAN (06.03 - 08.03)</h1>
-        <p><i>Tipp: Klicke in die Felder, um sie zu bearbeiten. Änderungen werden lokal gespeichert.</i></p>
-        
-        <table id="lanTable">
-            <thead>
-                <tr>
-                    <th>Tag / Zeit</th>
-                    <th>Spiel</th>
-                    <th>Vorschau</th>
-                </tr>
-            </thead>
-            <tbody id="planBody">
-                </tbody>
-        </table>
-        <button class="btn-reset" onclick="resetPlan()">Plan auf Standard zurücksetzen</button>
-    </div>
 
-    <script>
-        const games = [
-            { title: "The Finals", img: "https://placehold.co/100x60?text=Finals" },
-            { title: "Warcraft 3", img: "https://placehold.co/100x60?text=WC3" },
-            { title: "CS 1.6", img: "https://placehold.co/100x60?text=CS1.6" },
-            { title: "Quake 3", img: "https://placehold.co/100x60?text=Quake3" },
-            { title: "Flatout 2", img: "https://placehold.co/100x60?text=Flatout" },
-            { title: "World War Z", img: "https://placehold.co/100x60?text=WWZ" },
-            { title: "Trackmania", img: "https://placehold.co/100x60?text=TM" },
-            { title: "Serious Sam 2", img: "https://placehold.co/100x60?text=SS2" },
-            { title: "Blobby Volley", img: "https://placehold.co/100x60?text=Blobby" },
-            { title: "CC3 Tiberium Wars", img: "https://placehold.co/100x60?text=CC3" },
-            { title: "Dead Island 2", img: "https://placehold.co/100x60?text=DI2" },
-            { title: "Battlefield Vietnam", img: "https://placehold.co/100x60?text=BFV" },
-            { title: "Dead by Daylight", img: "https://placehold.co/100x60?text=DbD" },
-            { title: "Northgard", img: "https://placehold.co/100x60?text=North" }
-        ];
+<div class="hero">
+    <h1>LAN PARTY 2026</h1>
+    <p><i class="fas fa-calendar-alt"></i> 06. März - 08. März | <i class="fas fa-network-wired"></i> Highspeed LAN</p>
+</div>
 
-        function initPlan() {
-            const savedData = localStorage.getItem('lanPartyPlan_2026');
-            const tbody = document.getElementById('planBody');
-            tbody.innerHTML = '';
+<div class="grid" id="gameGrid"></div>
 
-            if (savedData) {
-                tbody.innerHTML = savedData;
-            } else {
-                let startTime = 18;
-                games.forEach((game, index) => {
-                    let day = index < 3 ? "Fr" : (index < 9 ? "Sa" : "So");
-                    let displayTime = `${startTime}:00 - ${startTime + 2}:00`;
-                    startTime = (startTime + 2) % 24;
-                    
-                    const row = `<tr>
-                        <td contenteditable="true">${day} ${displayTime}</td>
-                        <td contenteditable="true">${game.title}</td>
-                        <td><img src="${game.img}" class="game-img"></td>
-                    </tr>`;
-                    tbody.innerHTML += row;
-                });
-            }
-            
-            // Event Listener zum Speichern bei Änderungen
-            document.getElementById('lanTable').addEventListener('input', () => {
-                localStorage.setItem('lanPartyPlan_2026', tbody.innerHTML);
-            });
-        }
+<footer>
+    <p>Admin-Panel: Zum Ändern des Plans einfach die index.html in GitHub bearbeiten.</p>
+</footer>
 
-        function resetPlan() {
-            if(confirm("Plan wirklich zurücksetzen?")) {
-                localStorage.removeItem('lanPartyPlan_2026');
-                location.reload();
-            }
-        }
+<script>
+    const games = [
+        { d: "FR", t: "18:00", title: "The Finals", img: "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=400" },
+        { d: "FR", t: "20:00", title: "Warcraft 3", img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400" },
+        { d: "FR", t: "22:00", title: "CS 1.6", img: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400" },
+        { d: "SA", t: "10:00", title: "Quake 3", img: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400" },
+        { d: "SA", t: "12:00", title: "Flatout 2", img: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400" },
+        { d: "SA", t: "14:00", title: "World War Z", img: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=400" },
+        { d: "SA", t: "16:00", title: "Trackmania", img: "https://images.unsplash.com/photo-1547949003-9792a18a2601?w=400" },
+        { d: "SA", t: "18:00", title: "Serious Sam 2", img: "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=400" },
+        { d: "SA", t: "20:00", title: "Blobby Volley", img: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400" },
+        { d: "SA", t: "22:00", title: "C&C 3 Tiberium Wars", img: "https://images.unsplash.com/photo-1589190282376-28df73051967?w=400" },
+        { d: "SO", t: "08:00", title: "Dead Island 2", img: "https://images.unsplash.com/photo-1626014303757-62f721fac664?w=400" },
+        { d: "SO", t: "10:00", title: "Battlefield Vietnam", img: "https://images.unsplash.com/photo-1595113316349-9fa4eb24f884?w=400" },
+        { d: "SO", t: "12:00", title: "Dead by Daylight", img: "https://images.unsplash.com/photo-1605898399789-1829a3fc586f?w=400" },
+        { d: "SO", t: "14:00", title: "Northgard", img: "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=400" }
+    ];
 
-        initPlan();
-    </script>
+    const grid = document.getElementById('gameGrid');
+    games.forEach(g => {
+        grid.innerHTML += `
+            <div class="card">
+                <span class="day-tag">${g.d}</span>
+                <img src="${g.img}" class="card-img" alt="${g.title}">
+                <div class="card-content">
+                    <span class="time-info"><i class="far fa-clock"></i> ${g.t} - ${parseInt(g.t)+2}:00 Uhr</span>
+                    <h2 class="game-title">${g.title}</h2>
+                </div>
+            </div>
+        `;
+    });
+</script>
 </body>
 </html>
