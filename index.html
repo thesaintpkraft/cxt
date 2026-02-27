@@ -3,170 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | Game Selector</title>
+    <title>LAN 2026 | Live Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; min-height: 100vh; }
+        :root { --primary: #00ffcc; --bg: #0b0f1a; --card: #161f33; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
 
-        /* Bereich für das aktuell gespielte Spiel */
-        .current-game-zone {
-            max-width: 900px;
-            margin: 0 auto 40px auto;
-            padding: 40px;
-            border: 4px dashed #334155;
-            border-radius: 24px;
-            text-align: center;
-            background: rgba(30, 41, 59, 0.5);
-            transition: all 0.3s ease;
+        /* Aktueller Spielbereich */
+        .drop-zone {
+            max-width: 700px; margin: 0 auto 40px; padding: 30px;
+            border: 3px solid #1e293b; border-radius: 20px;
+            background: linear-gradient(145deg, #161f33, #0b0f1a);
+            text-align: center; min-height: 280px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .current-game-zone.drag-over { border-color: var(--primary); background: rgba(0, 255, 204, 0.1); transform: scale(1.02); }
-        .current-game-zone h2 { color: var(--primary); margin-top: 0; text-transform: uppercase; letter-spacing: 3px; font-size: 1.2rem; }
+        .drop-zone.hover { border-color: var(--primary); background: rgba(0, 255, 204, 0.05); }
         
-        #activeContent { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; }
-        #activeContent img { width: 350px; max-width: 90%; height: 200px; object-fit: cover; border-radius: 15px; box-shadow: 0 0 40px rgba(0, 255, 204, 0.3); border: 2px solid var(--primary); margin-bottom: 20px; }
-        #activeContent h3 { font-size: 2.5rem; margin: 0; font-weight: 800; text-transform: uppercase; }
+        #activeContent img { width: 100%; max-width: 450px; border-radius: 12px; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); }
+        #activeContent h3 { font-size: 2.2rem; color: var(--primary); margin: 15px 0 0; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* Der Spiele-Pool (Das Grid) */
-        .pool-header { text-align: center; margin-bottom: 20px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; }
-        
+        /* Spiele Pool */
         .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-            gap: 20px; 
-            max-width: 1400px; 
-            margin: 0 auto;
-            padding-bottom: 50px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 15px; max-width: 1200px; margin: 0 auto; 
         }
-
         .card { 
-            background: var(--card); 
-            border-radius: 12px; 
-            overflow: hidden; 
-            cursor: grab; 
-            transition: all 0.2s ease; 
-            border: 1px solid #334155;
-            user-select: none;
-            touch-action: none; /* Wichtig für Mobile Drag */
+            background: var(--card); border-radius: 10px; overflow: hidden; 
+            cursor: grab; border: 1px solid #2d3748; transition: 0.2s;
         }
-        .card:active { cursor: grabbing; transform: scale(0.95); }
-        .card:hover { border-color: var(--primary); background: #2d3748; }
-        
-        .card img { width: 100%; height: 130px; object-fit: cover; pointer-events: none; border-bottom: 1px solid #334155; }
-        .card-title { padding: 12px; font-size: 1rem; text-align: center; font-weight: 600; color: #e2e8f0; }
+        .card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .card img { width: 100%; height: 220px; object-fit: cover; pointer-events: none; }
+        .card-title { padding: 8px; font-size: 0.8rem; font-weight: bold; text-align: center; background: #1c2641; }
 
-        .placeholder-icon { font-size: 5rem; color: #334155; margin-bottom: 20px; }
-        .instruction { color: #64748b; font-size: 1rem; }
+        .instruction { color: #475569; margin-top: 100px; }
     </style>
 </head>
 <body>
 
-<div class="current-game-zone" id="dropZone">
-    <h2><i class="fas fa-circle-play"></i> Aktuelles Spiel</h2>
+<div class="drop-zone" id="dropZone">
+    <h2 style="color:var(--primary); font-size: 1rem; letter-spacing: 3px;">CURRENTLY PLAYING</h2>
     <div id="activeContent">
-        <div class="placeholder-icon"><i class="fas fa-gamepad"></i></div>
-        <p class="instruction">Zieh ein Spiel aus dem Pool hierher...</p>
+        <p class="instruction">Spiel hierher ziehen...</p>
     </div>
 </div>
 
-<h3 class="pool-header">Spiele-Pool</h3>
-<div class="grid" id="gameGrid">
-    </div>
+<h3 style="text-align: center; color: #475569; text-transform: uppercase; letter-spacing: 2px;">Spiele-Pool</h3>
+<div class="grid" id="gameGrid"></div>
 
 <script>
     const games = [
-        { title: "The Finals", img: "http://googleusercontent.com/image_collection/image_retrieval/2627066752429888466_0" },
-        { title: "Warcraft 3", img: "http://googleusercontent.com/image_collection/image_retrieval/560198653056371871_0" },
-        { title: "CS 1.6", img: "http://googleusercontent.com/image_collection/image_retrieval/5481325143750761011_0" },
-        { title: "Quake 3 Arena", img: "http://googleusercontent.com/image_collection/image_retrieval/15411003116955356391_0" },
-        { title: "Flatout 2", img: "http://googleusercontent.com/image_collection/image_retrieval/1415768087776015083_0" },
-        { title: "World War Z", img: "http://googleusercontent.com/image_collection/image_retrieval/376117350268699046_0" },
-        { title: "Trackmania", img: "http://googleusercontent.com/image_collection/image_retrieval/7493433709224535111_0" },
-        { title: "Serious Sam 2", img: "http://googleusercontent.com/image_collection/image_retrieval/6616305141977383674_0" },
-        { title: "Blobby Volley", img: "http://googleusercontent.com/image_collection/image_retrieval/6861931859787688986_0" },
-        { title: "C&C 3 Tiberium Wars", img: "http://googleusercontent.com/image_collection/image_retrieval/14087116026112456831_0" },
-        { title: "Dead Island 2", img: "http://googleusercontent.com/image_collection/image_retrieval/18272882639693264384_0" },
-        { title: "Battlefield Vietnam", img: "http://googleusercontent.com/image_collection/image_retrieval/16516434249527619125_0" },
-        { title: "Dead by Daylight", img: "http://googleusercontent.com/image_collection/image_retrieval/6808357615345433961_0" },
-        { title: "Northgard", img: "http://googleusercontent.com/image_collection/image_retrieval/8770647899034848472_0" }
-    ];
-
-    const grid = document.getElementById('gameGrid');
-    const dropZone = document.getElementById('dropZone');
-    const activeContent = document.getElementById('activeContent');
-
-    // Grid mit Karten befüllen
-    function initPool() {
-        games.forEach((game) => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.draggable = true;
-            card.innerHTML = `
-                <img src="${game.img}" alt="${game.title}" onerror="this.src='https://via.placeholder.com/220x130?text=No+Image'">
-                <div class="card-title">${game.title}</div>
-            `;
-            
-            // Drag Start Event
-            card.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('application/json', JSON.stringify(game));
-                card.style.opacity = '0.4';
-            });
-
-            card.addEventListener('dragend', () => {
-                card.style.opacity = '1';
-            });
-
-            grid.appendChild(card);
-        });
-    }
-
-    // Drop Zone Events
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('drag-over');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        try {
-            const gameData = JSON.parse(e.dataTransfer.getData('application/json'));
-            updateActiveGame(gameData);
-        } catch (err) {
-            console.error("Drop Fehler:", err);
-        }
-    });
-
-    function updateActiveGame(game) {
-        activeContent.innerHTML = `
-            <img src="${game.img}" alt="${game.title}" style="animation: bounceIn 0.6s ease;" onerror="this.src='https://via.placeholder.com/350x200?text=No+Image'">
-            <h3>${game.title}</h3>
-        `;
-        localStorage.setItem('currentLanGame', JSON.stringify(game));
-    }
-
-    // Beim Start prüfen, ob ein Spiel gespeichert ist
-    window.onload = () => {
-        initPool();
-        const saved = localStorage.getItem('currentLanGame');
-        if(saved) {
-            updateActiveGame(JSON.parse(saved));
-        }
-    };
-</script>
-
-<style>
-    @keyframes bounceIn {
-        0% { opacity: 0; transform: scale(0.3); }
-        50% { opacity: 1; transform: scale(1.05); }
-        70% { transform: scale(0.9); }
-        100% { transform: scale(1); }
-    }
-</style>
-
-</body>
-</html>
+        { title: "The Finals", img: "https://upload.wikimedia.org/wikipedia/en/0/09/The_Finals_cover_art.jpg" },
+        { title: "Warcraft 3", img: "
