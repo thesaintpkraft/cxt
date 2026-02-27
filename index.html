@@ -9,54 +9,68 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --text-muted: #94a3b8; }
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --text-muted: #94a3b8; --danger: #ff4b2b; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .status-bar { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; margin-bottom: 15px; color: var(--primary); border: 1px solid #334155; }
+        /* Header Bereich */
+        .header-nav { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .status-bar { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; color: var(--primary); border: 1px solid #334155; }
+        .nickname-btn { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: var(--primary); color: #0f172a; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .nickname-btn:hover { opacity: 0.8; transform: scale(1.05); }
 
+        /* Now Playing Box */
         .drop-zone { 
             width: 100%; max-width: 600px; min-height: 220px; padding: 20px; 
             border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); 
             text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative;
         }
         
         #activeContent img { max-width: 100%; height: 180px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; margin-bottom: 10px; }
-        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 0; text-transform: uppercase; }
+        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 2px; }
 
+        /* Pause Style */
+        .pause-banner { font-size: 3rem; font-weight: 900; color: #ff4b2b; text-shadow: 0 0 20px rgba(255, 75, 43, 0.5); animation: blink 1.5s infinite; margin: 20px 0; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Pause Button */
+        .control-btns { margin-top: 15px; display: flex; gap: 10px; }
+        .pause-btn { background: rgba(255, 75, 43, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 8px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8rem; }
+        .pause-btn:hover { background: var(--danger); color: white; }
+
+        /* Logs */
         .log-container {
             width: 100%; max-width: 600px; margin: 20px 0 40px;
             background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 10px;
             border: 1px solid #1e293b; font-size: 0.85rem;
         }
-        .log-entry { 
-            display: flex; justify-content: space-between; padding: 6px 10px; 
-            border-bottom: 1px solid #1e293b; color: var(--text-muted);
-            animation: slideIn 0.3s ease-out;
-        }
+        .log-entry { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #1e293b; color: var(--text-muted); }
         .log-entry:last-child { border-bottom: none; }
         .log-user { color: var(--primary); font-weight: bold; }
-        .log-game { color: white; }
 
+        /* Pool */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; padding-bottom: 50px; }
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid #334155; transition: 0.2s; display: flex; flex-direction: column; touch-action: manipulation; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid #334155; transition: 0.2s; display: flex; flex-direction: column; }
         .card:hover { border-color: var(--primary); transform: translateY(-5px); }
         .card img { width: 100%; height: 160px; object-fit: cover; pointer-events: none; background: #000; }
         .card-title { padding: 8px; font-size: 0.8rem; font-weight: bold; text-align: center; background: #1c2641; min-height: 35px; display: flex; align-items: center; justify-content: center; }
 
-        .settings-btn { margin-top: auto; padding: 20px; font-size: 0.7rem; color: #475569; cursor: pointer; text-decoration: underline; }
-
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <div class="status-bar" id="syncStatus">Verbinde...</div>
+    <div class="header-nav">
+        <div class="status-bar" id="syncStatus">Verbinde...</div>
+        <button class="nickname-btn" onclick="changeName()">👤 Nickname</button>
+    </div>
 
     <div class="drop-zone" id="dropZone">
-        <h2 style="color:var(--primary); margin-top:0; font-size: 0.8rem; letter-spacing: 2px;">JETZT AKTIV</h2>
         <div id="activeContent">
-            <p style="color:#475569">Warte auf Synchronisation...</p>
+            <p style="color:#475569">Lade Dashboard...</p>
+        </div>
+        <div class="control-btns">
+            <button class="pause-btn" onclick="setPause()">⏸ PAUSE EINLEGEN</button>
         </div>
     </div>
 
@@ -67,14 +81,12 @@
 
     <div class="grid" id="gameGrid"></div>
 
-    <div class="settings-btn" onclick="changeName()">Nickname ändern</div>
-
     <script>
         // Nickname Logik
         function getName() {
             let nick = localStorage.getItem('lan_nickname');
             if (!nick) {
-                nick = prompt("Willkommen zur LAN! Bitte gib deinen Nickname ein:", "Gast_" + Math.floor(Math.random()*100));
+                nick = prompt("Nickname eingeben:", "Gast_" + Math.floor(Math.random()*100));
                 if (!nick || nick.trim() === "") nick = "Anonym";
                 localStorage.setItem('lan_nickname', nick);
             }
@@ -82,15 +94,16 @@
         }
 
         function changeName() {
-            let newNick = prompt("Neuen Nickname eingeben:", localStorage.getItem('lan_nickname'));
+            let newNick = prompt("Neuer Nickname:", localStorage.getItem('lan_nickname'));
             if (newNick && newNick.trim() !== "") {
                 localStorage.setItem('lan_nickname', newNick);
-                location.reload(); // Seite neu laden um Namen zu übernehmen
+                location.reload();
             }
         }
 
         let nickname = getName();
 
+        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -123,6 +136,15 @@
             { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
         ];
 
+        function setPause() {
+            gameRef.set({ isPause: true });
+            logRef.push({ user: nickname, game: "PAUSE", time: getTime() });
+        }
+
+        function getTime() {
+            return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
         function renderPool() {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
@@ -130,15 +152,9 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `<img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x200?text=Fehler'"><div class="card-title">${game.title}</div>`;
-                
                 card.onclick = () => {
-                    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     gameRef.set(game);
-                    logRef.push({
-                        user: nickname,
-                        game: game.title,
-                        time: time
-                    });
+                    logRef.push({ user: nickname, game: game.title, time: getTime() });
                 };
                 grid.appendChild(card);
             });
@@ -146,28 +162,24 @@
 
         gameRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if(data) {
-                document.getElementById('activeContent').innerHTML = `
-                    <img src="${data.img}" style="animation: fadeIn 0.4s ease-out;">
-                    <h3>${data.title}</h3>
-                `;
-                document.getElementById('syncStatus').innerText = "Angemeldet als: " + nickname;
+            const content = document.getElementById('activeContent');
+            if(data && data.isPause) {
+                content.innerHTML = `<div class="pause-banner">GROSSE PAUSE</div>`;
+            } else if(data) {
+                content.innerHTML = `<img src="${data.img}" style="animation: fadeIn 0.4s ease-out;"><h3>${data.title}</h3>`;
             }
+            document.getElementById('syncStatus').innerText = "User: " + nickname;
         });
 
         logRef.limitToLast(5).on('value', (snapshot) => {
-            const logs = snapshot.val();
             const logList = document.getElementById('logList');
             logList.innerHTML = '';
+            const logs = snapshot.val();
             if (logs) {
-                const sortedLogs = Object.values(logs).reverse();
-                sortedLogs.forEach(entry => {
+                Object.values(logs).reverse().forEach(entry => {
                     const div = document.createElement('div');
                     div.className = 'log-entry';
-                    div.innerHTML = `
-                        <span>${entry.time}</span>
-                        <span><span class="log-user">${entry.user}</span> spielt <span class="log-game">${entry.game}</span></span>
-                    `;
+                    div.innerHTML = `<span>${entry.time}</span><span><span class="log-user">${entry.user}</span>: ${entry.game === 'PAUSE' ? '⏸ Pause' : entry.game}</span>`;
                     logList.appendChild(div);
                 });
             }
