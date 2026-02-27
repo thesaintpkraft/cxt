@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE STABLE</title>
+    <title>LAN 2026 | PROTOTYPE REPAIRED</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -20,8 +20,17 @@
 
         #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; }
 
+        /* Login Modal */
+        #authModal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: rgba(0, 15, 0, 0.98); padding: 30px; border: 2px solid var(--matrix-green); 
+            z-index: 1000; width: 320px; box-shadow: 0 0 30px var(--matrix-green); border-radius: 15px;
+        }
+        #authModal input { width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px; background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); border-radius: 8px; }
+
         .header-nav { width: 100%; max-width: 700px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; }
-        .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 8px; text-transform: uppercase; }
+        .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 10px; text-transform: uppercase; }
+        .btn-matrix:hover { background: var(--matrix-green); color: black; }
 
         .add-game-container {
             width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); 
@@ -33,24 +42,18 @@
             width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); 
             border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); 
         }
-        .section-title { text-align: center; font-size: 1.5rem; color: var(--matrix-green); margin-bottom: 20px; letter-spacing: 5px; }
-
-        .player-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0, 255, 65, 0.3); }
-        .player-name { color: white; flex: 1; font-weight: bold; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 20px; }
         
-        /* Runde Ecken für die Karten */
         .card { 
             background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); 
-            border-radius: 12px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s;
+            border-radius: 15px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s;
         }
         .card img { width: 100%; height: 120px; object-fit: cover; border-bottom: 1px solid var(--matrix-green); }
-        .card-info { padding: 10px; }
+        .card-info { padding: 10px; font-size: 0.9rem; }
         .card:hover { box-shadow: 0 0 15px var(--matrix-green); transform: translateY(-5px); }
 
-        .suggested-by { font-size: 0.6rem; color: #888; margin-top: 5px; }
-        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.5); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; }
+        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.7); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -58,8 +61,20 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="header-nav">
-        <div id="syncStatus">[MATRIX CONNECTED]</div>
-        <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
+        <div id="syncStatus">[SYSTEM ACTIVE]</div>
+        <div>
+            <button id="loginBtn" class="btn-matrix" onclick="openAuthModal()">LOGIN</button>
+            <button id="logoutBtn" class="btn-matrix" style="display:none; color: var(--danger); border-color: var(--danger);" onclick="doLogout()">LOGOUT</button>
+            <button class="btn-matrix" style="margin-left:5px;" onclick="changeName()">NAME</button>
+        </div>
+    </div>
+
+    <div id="authModal">
+        <h3 style="color:var(--matrix-green); text-align:center;">ADMIN LOGIN</h3>
+        <input type="email" id="authEmail" placeholder="E-MAIL">
+        <input type="password" id="authPass" placeholder="PASSWORT">
+        <button class="btn-matrix" style="width:100%; margin-top:10px;" onclick="handleAuth()">AUTHORIZE</button>
+        <p onclick="closeAuthModal()" style="font-size:0.7rem; text-align:center; cursor:pointer; color:var(--danger); margin-top:15px;">ABBRECHEN</p>
     </div>
 
     <div class="add-game-container">
@@ -69,14 +84,14 @@
     </div>
 
     <div class="player-status-container">
-        <div class="section-title">STATUS ÜBERSICHT</div>
+        <div style="text-align:center; letter-spacing: 3px; margin-bottom:15px;">WER ZOCKT WAS?</div>
         <div id="playerList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // Matrix Rain
+        // Matrix Animation
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -85,14 +100,14 @@
             ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#00ff41"; ctx.font = "16px monospace";
             drops.forEach((y, i) => {
-                ctx.fillText("01", i * 16, y * 16);
+                ctx.fillText(Math.floor(Math.random()*2), i * 16, y * 16);
                 if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             });
         }
         setInterval(drawMatrix, 35);
 
-        // Firebase Config
+        // Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -104,13 +119,12 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
         const poolRef = db.ref('game_pool');
         const playersRef = db.ref('players');
-        const auth = firebase.auth();
 
         let nickname = localStorage.getItem('lan_nickname') || "User_" + Math.floor(Math.random()*100);
 
-        // Festgelegte Grundspiele mit korrekten Bildpfaden (relativ)
         const coreGames = [
             { title: "The Finals", img: "img/thefinals.jpg" },
             { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
@@ -128,6 +142,22 @@
             { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
         ];
 
+        // Admin Auth Funktionen
+        function openAuthModal() { document.getElementById('authModal').style.display = 'block'; }
+        function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+        function handleAuth() {
+            const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPass').value;
+            auth.signInWithEmailAndPassword(email, pass).then(() => closeAuthModal()).catch(err => alert(err.message));
+        }
+        function doLogout() { auth.signOut(); }
+        auth.onAuthStateChanged(user => {
+            window.isAdmin = !!user;
+            document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
+            document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
+        });
+
+        // Spiel hinzufügen
         function addGameToPool() {
             const val = document.getElementById('newGameInput').value.trim();
             if(val) {
@@ -136,27 +166,28 @@
             }
         }
 
-        // Render-Logik: Grundspiele + Firebase Vorschläge
-        poolRef.on('value', snapshot => {
+        // --- ZENTRALE RENDER FUNKTION ---
+        function renderAllGames(snapshot) {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = ''; 
 
-            // 1. Grundspiele rendern
+            // 1. Grundspiele (Immer da)
             coreGames.forEach(game => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                // WICHTIG: Hier sind die Bilder eingebaut
                 card.innerHTML = `
                     <img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x120?text=No+Image'">
-                    <div class="card-info">
-                        <strong>${game.title}</strong><br>
-                        <span class="suggested-by">SYSTEM CORE</span>
-                    </div>
+                    <div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5;">CORE</span></div>
                 `;
-                card.onclick = () => db.ref('current_game').set({ title: game.title });
+                card.onclick = () => {
+                    db.ref('current_game').set({ title: game.title });
+                    playersRef.child(nickname).set(game.title);
+                };
                 grid.appendChild(card);
             });
 
-            // 2. Vorschläge aus Firebase rendern
+            // 2. Vorschläge aus Firebase (Hinzugefügt)
             const data = snapshot.val();
             if(data) {
                 Object.keys(data).forEach(id => {
@@ -167,30 +198,33 @@
                     card.innerHTML = `
                         ${del}
                         <div style="height:120px; display:flex; align-items:center; justify-content:center; background:#001100; font-size:2rem;">?</div>
-                        <div class="card-info">
-                            <strong>${game.title}</strong><br>
-                            <span class="suggested-by">USER: ${game.user || 'ANON'}</span>
-                        </div>
+                        <div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5;">BY ${game.user || 'ANON'}</span></div>
                     `;
-                    card.onclick = () => db.ref('current_game').set({ title: game.title });
+                    card.onclick = () => {
+                        db.ref('current_game').set({ title: game.title });
+                        playersRef.child(nickname).set(game.title);
+                    };
                     grid.appendChild(card);
                 });
             }
-        });
+        }
+
+        // Firebase Listener
+        poolRef.on('value', renderAllGames);
 
         playersRef.on('value', s => {
             const l = document.getElementById('playerList');
             l.innerHTML = '';
             if (s.val()) {
                 Object.keys(s.val()).forEach(name => {
-                    const row = document.createElement('div'); row.className = 'player-row';
-                    row.innerHTML = `<span class="player-name">${name}</span><span>${s.val()[name]}</span>`;
+                    const row = document.createElement('div'); 
+                    row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.padding = "5px";
+                    row.innerHTML = `<span>${name}</span><span style="color:white">${s.val()[name]}</span>`;
                     l.appendChild(row);
                 });
             }
         });
 
-        auth.onAuthStateChanged(user => { window.isAdmin = !!user; });
         function changeName() {
             let n = prompt("NAME:", nickname);
             if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
