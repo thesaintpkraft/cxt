@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAN Party Zeitplan 2026</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; text-align: center; }
+        h1 { color: #00ffcc; text-shadow: 2px 2px #000; }
+        .container { max-width: 900px; margin: auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; background: #2d2d2d; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; border: 1px solid #444; }
+        th { background: #333; color: #00ffcc; }
+        .game-img { width: 80px; height: 50px; object-fit: cover; border-radius: 5px; background: #444; }
+        [contenteditable="true"]:hover { background: #3d3d3d; outline: 1px solid #00ffcc; cursor: pointer; }
+        .btn-reset { margin-top: 20px; padding: 10px; background: #ff4444; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LAN PARTY PLAN (06.03 - 08.03)</h1>
+        <p><i>Tipp: Klicke in die Felder, um sie zu bearbeiten. Änderungen werden lokal gespeichert.</i></p>
+        
+        <table id="lanTable">
+            <thead>
+                <tr>
+                    <th>Tag / Zeit</th>
+                    <th>Spiel</th>
+                    <th>Vorschau</th>
+                </tr>
+            </thead>
+            <tbody id="planBody">
+                </tbody>
+        </table>
+        <button class="btn-reset" onclick="resetPlan()">Plan auf Standard zurücksetzen</button>
+    </div>
+
+    <script>
+        const games = [
+            { title: "The Finals", img: "https://placehold.co/100x60?text=Finals" },
+            { title: "Warcraft 3", img: "https://placehold.co/100x60?text=WC3" },
+            { title: "CS 1.6", img: "https://placehold.co/100x60?text=CS1.6" },
+            { title: "Quake 3", img: "https://placehold.co/100x60?text=Quake3" },
+            { title: "Flatout 2", img: "https://placehold.co/100x60?text=Flatout" },
+            { title: "World War Z", img: "https://placehold.co/100x60?text=WWZ" },
+            { title: "Trackmania", img: "https://placehold.co/100x60?text=TM" },
+            { title: "Serious Sam 2", img: "https://placehold.co/100x60?text=SS2" },
+            { title: "Blobby Volley", img: "https://placehold.co/100x60?text=Blobby" },
+            { title: "CC3 Tiberium Wars", img: "https://placehold.co/100x60?text=CC3" },
+            { title: "Dead Island 2", img: "https://placehold.co/100x60?text=DI2" },
+            { title: "Battlefield Vietnam", img: "https://placehold.co/100x60?text=BFV" },
+            { title: "Dead by Daylight", img: "https://placehold.co/100x60?text=DbD" },
+            { title: "Northgard", img: "https://placehold.co/100x60?text=North" }
+        ];
+
+        function initPlan() {
+            const savedData = localStorage.getItem('lanPartyPlan_2026');
+            const tbody = document.getElementById('planBody');
+            tbody.innerHTML = '';
+
+            if (savedData) {
+                tbody.innerHTML = savedData;
+            } else {
+                let startTime = 18;
+                games.forEach((game, index) => {
+                    let day = index < 3 ? "Fr" : (index < 9 ? "Sa" : "So");
+                    let displayTime = `${startTime}:00 - ${startTime + 2}:00`;
+                    startTime = (startTime + 2) % 24;
+                    
+                    const row = `<tr>
+                        <td contenteditable="true">${day} ${displayTime}</td>
+                        <td contenteditable="true">${game.title}</td>
+                        <td><img src="${game.img}" class="game-img"></td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            }
+            
+            // Event Listener zum Speichern bei Änderungen
+            document.getElementById('lanTable').addEventListener('input', () => {
+                localStorage.setItem('lanPartyPlan_2026', tbody.innerHTML);
+            });
+        }
+
+        function resetPlan() {
+            if(confirm("Plan wirklich zurücksetzen?")) {
+                localStorage.removeItem('lanPartyPlan_2026');
+                location.reload();
+            }
+        }
+
+        initPlan();
+    </script>
+</body>
+</html>
