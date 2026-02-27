@@ -10,7 +10,7 @@
 
     <style>
         :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
         .status-bar { font-size: 0.8rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; margin-bottom: 20px; color: var(--primary); border: 1px solid #334155; }
 
@@ -19,47 +19,48 @@
             border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); 
             text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .drop-zone.hover { border-color: var(--primary); background: rgba(0, 255, 204, 0.1); }
         
         #activeContent img { max-width: 100%; height: 200px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; }
         #activeContent h3 { font-size: 2rem; color: var(--primary); margin: 15px 0 0; }
 
         .grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-            gap: 20px; 
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 15px; 
             width: 100%; 
             max-width: 1200px;
             padding-bottom: 50px;
         }
 
         .card { 
-            background: var(--card); border-radius: 12px; overflow: hidden; cursor: grab; 
-            border: 1px solid #334155; transition: 0.2s; display: flex; flex-direction: column; 
+            background: var(--card); border-radius: 12px; overflow: hidden; 
+            cursor: pointer; border: 1px solid #334155; transition: 0.2s; 
+            display: flex; flex-direction: column; touch-action: manipulation;
         }
         .card:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .card img { width: 100%; height: 180px; object-fit: cover; pointer-events: none; background: #000; }
-        .card-title { padding: 10px; font-size: 0.85rem; font-weight: bold; text-align: center; background: #1c2641; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+        .card:active { transform: scale(0.95); background: #2d3748; }
         
-        /* Falls ein Bild fehlt */
-        img:error { border: 2px solid red; }
+        .card img { width: 100%; height: 160px; object-fit: cover; pointer-events: none; background: #000; }
+        .card-title { padding: 8px; font-size: 0.8rem; font-weight: bold; text-align: center; background: #1c2641; min-height: 35px; display: flex; align-items: center; justify-content: center; }
+        
+        .hint { font-size: 0.7rem; color: #475569; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="status-bar" id="syncStatus">Initialisiere...</div>
+    <div class="status-bar" id="syncStatus">Verbinde...</div>
 
     <div class="drop-zone" id="dropZone">
-        <h2 style="color:var(--primary); margin-top:0; font-size: 1rem; letter-spacing: 2px;">AKTUELL AKTIV</h2>
+        <h2 style="color:var(--primary); margin-top:0; font-size: 0.9rem; letter-spacing: 2px;">AKTUELL AKTIV</h2>
         <div id="activeContent">
             <p style="color:#475569">Warte auf Daten...</p>
         </div>
+        <p class="hint">Tippe ein Spiel an oder ziehe es hierher</p>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // Deine Firebase Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -70,12 +71,10 @@
             appId: "1:1070535216863:web:3052c02bea67dc2881636a"
         };
 
-        // Firebase Start
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const gameRef = database.ref('current_game');
 
-        // Deine exakte Dateiliste von GitHub
         const games = [
             { title: "The Finals", img: "img/thefinals.jpg" },
             { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
@@ -103,50 +102,44 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.draggable = true;
-                // WICHTIG: onerror falls Pfad doch falsch ist
                 card.innerHTML = `
                     <img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x200?text=Fehler'">
                     <div class="card-title">${game.title}</div>
                 `;
+                
+                // FUNKTION FÜR PC (Drag)
                 card.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('application/json', JSON.stringify(game));
                 });
+
+                // FUNKTION FÜR MOBIL & PC (Klick)
+                card.addEventListener('click', () => {
+                    gameRef.set(game);
+                });
+
                 grid.appendChild(card);
             });
         }
 
-        // Drag & Drop
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('hover'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZone.classList.remove('hover');
-            try {
-                const data = JSON.parse(e.dataTransfer.getData('application/json'));
-                gameRef.set(data);
-            } catch(err) { console.error("Drop Error", err); }
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            gameRef.set(data);
         });
 
-        // Sync Logik
         gameRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if(data) {
                 document.getElementById('activeContent').innerHTML = `
-                    <img src="${data.img}" style="animation: fadeIn 0.5s;">
+                    <img src="${data.img}" style="animation: fadeIn 0.4s ease-out;">
                     <h3>${data.title}</h3>
                 `;
                 statusDisplay.innerText = "Live: " + data.title;
-            } else {
-                statusDisplay.innerText = "Verbunden. Zieh ein Spiel hoch!";
             }
         });
 
-        // Start
         window.onload = renderPool;
     </script>
-
-    <style>
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-    </style>
 </body>
 </html>
