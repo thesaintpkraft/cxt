@@ -3,40 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | LIVE STATUS</title>
+    <title>LAN 2026 | PRO DASHBOARD</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 
     <style>
         :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --text-muted: #94a3b8; --danger: #ff4b2b; --warning: #facc15; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        #adminNewsBanner { width: 100%; max-width: 600px; background: var(--warning); color: #000; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: bold; display: none; animation: slideDown 0.5s ease; border: 2px solid #000; }
-        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #adminNewsBanner { width: 100%; max-width: 600px; background: var(--warning); color: #000; padding: 12px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: bold; display: none; border: 2px solid #000; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3); }
 
         .header-nav { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .status-bar { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; color: var(--primary); border: 1px solid #334155; }
-        .nickname-btn { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: var(--primary); color: #0f172a; border: none; cursor: pointer; font-weight: bold; }
+        .auth-btns button { font-size: 0.75rem; padding: 6px 14px; border-radius: 20px; cursor: pointer; border: none; font-weight: bold; margin-left: 5px; transition: 0.2s; }
+        .btn-login { background: var(--primary); color: #0f172a; }
+        .btn-logout { background: var(--danger); color: white; display: none; }
+
+        /* Auth Modal */
+        #authModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card); padding: 25px; border-radius: 15px; border: 2px solid var(--primary); z-index: 1000; width: 320px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        #authModal h3 { margin-top: 0; color: var(--primary); text-align: center; }
+        #authModal input { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; }
+        #authModal button { width: 100%; padding: 12px; background: var(--primary); border: none; font-weight: bold; cursor: pointer; border-radius: 8px; margin-top: 10px; }
+        .modal-link { font-size: 0.7rem; text-align: center; margin-top: 12px; cursor: pointer; color: var(--text-muted); display: block; }
 
         #adminPanel { width: 100%; max-width: 600px; background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--primary); display: none; }
-        #adminPanel input { background: #0f172a; border: 1px solid #334155; color: white; padding: 8px; border-radius: 5px; width: 60%; }
-        #adminPanel button { background: var(--primary); border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 5px; }
+        #adminPanel input { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 65%; }
 
         .drop-zone { width: 100%; max-width: 600px; min-height: 220px; padding: 20px; border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #activeContent img { max-width: 100%; height: 180px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; margin-bottom: 10px; }
-        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 0; text-transform: uppercase; }
+        .pause-banner { font-size: 2.5rem; font-weight: 900; color: var(--danger); text-shadow: 0 0 15px rgba(255, 75, 43, 0.4); }
 
-        .pause-banner { font-size: 3rem; font-weight: 900; color: var(--danger); text-shadow: 0 0 20px rgba(255, 75, 43, 0.5); animation: blink 1.5s infinite; margin: 20px 0; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        .player-status-container { width: 100%; max-width: 600px; margin: 20px 0 40px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; }
-        .player-row { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+        .player-status-container { width: 100%; max-width: 600px; margin: 20px 0; background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 15px; border: 1px solid #1e293b; }
+        .player-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
         .player-name { color: var(--primary); font-weight: bold; flex: 1; }
         .player-game { color: white; flex: 2; text-align: center; }
-        .admin-actions { display: flex; gap: 10px; padding-left: 10px; }
-        .btn-del { color: var(--danger); cursor: pointer; font-weight: bold; font-size: 1.2rem; }
-        .btn-promote { color: var(--warning); cursor: pointer; font-size: 1.1rem; }
+        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.4rem; padding-left: 10px; line-height: 1; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; padding-bottom: 50px; }
         .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid #334155; transition: 0.2s; }
@@ -50,40 +53,49 @@
 
     <div class="header-nav">
         <div class="status-bar" id="syncStatus">Verbinde...</div>
-        <button class="nickname-btn" onclick="changeName()">👤 Nickname</button>
-    </div>
-
-    <div id="adminPanel">
-        <div style="font-size: 0.7rem; color: var(--primary); margin-bottom: 5px; font-weight: bold;">ADMIN PANEL</div>
-        <div style="display:flex; gap:5px;">
-            <input type="text" id="newsInput" placeholder="Broadcast Nachricht...">
-            <button onclick="sendNews()">Senden</button>
-            <button style="background:var(--danger); color:white;" onclick="clearNews()">X</button>
+        <div class="auth-btns">
+            <button id="loginBtn" class="btn-login" onclick="openAuthModal('login')">🔑 Admin</button>
+            <button id="logoutBtn" class="btn-logout" onclick="doLogout()">Abmelden</button>
+            <button style="background:#334155; color:white;" onclick="changeName()">👤 Name</button>
         </div>
     </div>
 
-    <div class="drop-zone" id="dropZone">
-        <div id="activeContent"><p style="color:#475569">Lade Dashboard...</p></div>
-        <div style="margin-top:15px;"><button style="background:rgba(255,75,43,0.1); color:var(--danger); border:1px solid var(--danger); padding:8px 20px; border-radius:10px; cursor:pointer; font-weight:bold;" onclick="setPause()">⏸ PAUSE EINLEGEN</button></div>
+    <div id="authModal">
+        <h3 id="modalTitle">Admin Login</h3>
+        <input type="email" id="authEmail" placeholder="E-Mail Adresse">
+        <input type="password" id="authPass" placeholder="Passwort">
+        <button id="modalActionBtn" onclick="handleAuth()">Einloggen</button>
+        <span class="modal-link" id="modalToggleText" onclick="toggleAuthMode()">Account erstellen</span>
+        <span class="modal-link" style="color:var(--warning);" onclick="resetPassword()">Passwort vergessen?</span>
+        <p onclick="closeAuthModal()" style="text-align:center; cursor:pointer; font-size:0.8rem; color:var(--danger); margin-top:20px;">Abbrechen</p>
+    </div>
+
+    <div id="adminPanel">
+        <div style="font-size: 0.7rem; color: var(--primary); margin-bottom: 5px; font-weight: bold;">ADMIN CONTROL</div>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="newsInput" placeholder="Nachricht an alle...">
+            <button style="background:var(--primary); border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="sendNews()">OK</button>
+            <button style="background:var(--danger); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;" onclick="clearNews()">X</button>
+        </div>
+    </div>
+
+    <div class="drop-zone">
+        <div id="activeContent"></div>
+        <div style="margin-top:15px;"><button style="background:rgba(255,75,43,0.1); color:var(--danger); border:1px solid var(--danger); padding:10px 25px; border-radius:12px; cursor:pointer; font-weight:bold;" onclick="setPause()">⏸ PAUSE</button></div>
     </div>
 
     <div class="player-status-container">
-        <div style="text-align: center; font-size: 0.7rem; color: #475569; margin-bottom: 10px; text-transform: uppercase;">Wer zockt was?</div>
         <div id="playerList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        const MASTER_ADMIN = "Saint";
+        let currentMode = 'login';
         let nickname = localStorage.getItem('lan_nickname') || "Gast_" + Math.floor(Math.random()*100);
         localStorage.setItem('lan_nickname', nickname);
 
-        function changeName() {
-            let n = prompt("Neuer Nickname:", nickname);
-            if (n && n.trim() !== "") { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
-        }
-
+        // Firebase Config (deine Daten)
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -96,35 +108,71 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
         const gameRef = database.ref('current_game');
         const playersRef = database.ref('players');
         const newsRef = database.ref('admin_news');
-        const adminsRef = database.ref('admins'); // Liste der ernannten Admins
 
-        // News Logik
-        newsRef.on('value', (s) => {
-            const banner = document.getElementById('adminNewsBanner');
-            if(s.val()) { banner.innerText = "📣 " + s.val(); banner.style.display = 'block'; }
-            else { banner.style.display = 'none'; }
+        // --- AUTH LOGIK ---
+        function openAuthModal(mode) {
+            currentMode = mode;
+            document.getElementById('authModal').style.display = 'block';
+            updateModalUI();
+        }
+
+        function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+
+        function toggleAuthMode() {
+            currentMode = (currentMode === 'login') ? 'register' : 'login';
+            updateModalUI();
+        }
+
+        function updateModalUI() {
+            document.getElementById('modalTitle').innerText = currentMode === 'login' ? 'Admin Login' : 'Admin Registrieren';
+            document.getElementById('modalActionBtn').innerText = currentMode === 'login' ? 'Einloggen' : 'Account erstellen';
+            document.getElementById('modalToggleText').innerText = currentMode === 'login' ? 'Noch kein Admin? Hier registrieren' : 'Bereits Admin? Hier einloggen';
+        }
+
+        function handleAuth() {
+            const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPass').value;
+            if(!email || pass.length < 6) return alert("E-Mail nötig & Passwort mind. 6 Zeichen!");
+            
+            if(currentMode === 'register') {
+                auth.createUserWithEmailAndPassword(email, pass)
+                    .then(() => { alert("Account erstellt! Du bist jetzt Admin."); closeAuthModal(); })
+                    .catch(err => alert(err.message));
+            } else {
+                auth.signInWithEmailAndPassword(email, pass)
+                    .then(() => { closeAuthModal(); })
+                    .catch(err => alert("Login fehlgeschlagen. Passwort korrekt?"));
+            }
+        }
+
+        function resetPassword() {
+            const email = document.getElementById('authEmail').value;
+            if(!email) return alert("Bitte gib erst deine E-Mail oben ein.");
+            auth.sendPasswordResetEmail(email)
+                .then(() => alert("E-Mail zum Zurücksetzen wurde gesendet!"))
+                .catch(err => alert(err.message));
+        }
+
+        function doLogout() { auth.signOut(); }
+
+        auth.onAuthStateChanged(user => {
+            const isAdmin = !!user;
+            document.getElementById('adminPanel').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('loginBtn').style.display = isAdmin ? 'none' : 'inline-block';
+            document.getElementById('logoutBtn').style.display = isAdmin ? 'inline-block' : 'none';
+            window.isAdminGlobal = isAdmin;
+            renderPlayerList();
         });
 
-        // Berechtigungen prüfen
-        function checkAdminStatus() {
-            adminsRef.child(nickname).on('value', (snapshot) => {
-                if (nickname === MASTER_ADMIN || snapshot.val() === true) {
-                    document.getElementById('adminPanel').style.display = 'block';
-                    window.isAdmin = true;
-                } else {
-                    document.getElementById('adminPanel').style.display = 'none';
-                    window.isAdmin = false;
-                }
-            });
+        // --- GAME LOGIK ---
+        function changeName() {
+            let n = prompt("Nickname:", nickname);
+            if (n && n.trim() !== "") { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
         }
-        checkAdminStatus();
-
-        function sendNews() { if(window.isAdmin) newsRef.set(document.getElementById('newsInput').value); }
-        function clearNews() { if(window.isAdmin) { newsRef.set(""); document.getElementById('newsInput').value = ""; } }
-        function setPause() { gameRef.set({ isPause: true }); playersRef.child(nickname).set("⏸ PAUSE"); }
 
         const games = [
             { title: "The Finals", img: "img/thefinals.jpg" }, { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
@@ -135,6 +183,10 @@
             { title: "Dead Island 2", img: "img/Dead_Island_2_cover_art.jpg" }, { title: "BF Vietnam", img: "img/Battlefield_Vietnam_Coverart.png" },
             { title: "Dead by Daylight", img: "img/Dead_by_Daylight_Logo.png" }, { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
         ];
+
+        function sendNews() { if(window.isAdminGlobal) newsRef.set(document.getElementById('newsInput').value); }
+        function clearNews() { if(window.isAdminGlobal) newsRef.set(""); }
+        function setPause() { gameRef.set({ isPause: true }); playersRef.child(nickname).set("⏸ PAUSE"); }
 
         function renderPool() {
             const grid = document.getElementById('gameGrid');
@@ -147,33 +199,35 @@
             });
         }
 
-        gameRef.on('value', (s) => {
+        newsRef.on('value', s => {
+            const b = document.getElementById('adminNewsBanner');
+            if(s.val()) { b.innerText = "📣 " + s.val(); b.style.display = 'block'; }
+            else { b.style.display = 'none'; }
+        });
+
+        gameRef.on('value', s => {
             const d = s.val(); const c = document.getElementById('activeContent');
             if(d && d.isPause) c.innerHTML = `<div class="pause-banner">GROSSE PAUSE</div>`;
             else if(d) c.innerHTML = `<img src="${d.img}"><h3>${d.title}</h3>`;
             document.getElementById('syncStatus').innerText = "User: " + nickname;
         });
 
-        playersRef.on('value', (s) => {
-            const p = s.val(); const l = document.getElementById('playerList');
-            l.innerHTML = '';
-            if (p) {
-                Object.keys(p).forEach(name => {
-                    const row = document.createElement('div'); row.className = 'player-row';
-                    let actions = "";
-                    if (window.isAdmin) {
-                        actions += `<span class="btn-del" onclick="playersRef.child('${name}').remove()" title="Kick">×</span>`;
-                    }
-                    if (nickname === MASTER_ADMIN && name !== MASTER_ADMIN) {
-                        actions += `<span class="btn-promote" onclick="adminsRef.child('${name}').set(true)" title="Admin geben">★</span>`;
-                    }
-                    row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span><div class="admin-actions">${actions}</div>`;
-                    l.appendChild(row);
-                });
-            }
-        });
+        function renderPlayerList() {
+            playersRef.on('value', s => {
+                const p = s.val(); const l = document.getElementById('playerList');
+                l.innerHTML = '<div style="text-align:center; font-size:0.75rem; color:#475569; margin-bottom:10px; text-transform:uppercase;">Wer zockt was?</div>';
+                if (p) {
+                    Object.keys(p).forEach(name => {
+                        const row = document.createElement('div'); row.className = 'player-row';
+                        let del = window.isAdminGlobal ? `<span class="admin-delete" onclick="firebase.database().ref('players').child('${name}').remove()">×</span>` : "";
+                        row.innerHTML = `<span class="player-name">${name}</span><span class="player-game">${p[name]}</span>${del}`;
+                        l.appendChild(row);
+                    });
+                }
+            });
+        }
 
-        window.onload = renderPool;
+        window.onload = () => { renderPool(); renderPlayerList(); };
     </script>
 </body>
 </html>
