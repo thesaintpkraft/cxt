@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE V4</title>
+    <title>LAN 2026 | PROTOTYPE V5</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -12,36 +12,39 @@
     <style>
         :root { --matrix-green: #00ff41; --matrix-dark: #000800; --danger: #ff4b2b; }
         body { 
-            font-family: 'Courier New', Courier, monospace; background: var(--matrix-dark); color: var(--matrix-green); 
+            font-family: 'Courier New', monospace; background: var(--matrix-dark); color: var(--matrix-green); 
             margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
         #matrixCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.15; }
 
-        /* Login Modal */
-        #authModal { 
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: rgba(0, 20, 0, 0.98); padding: 30px; border: 2px solid var(--matrix-green); 
-            z-index: 1000; width: 320px; border-radius: 15px; box-shadow: 0 0 30px var(--matrix-green);
-        }
-        #authModal input { width: 100%; margin: 10px 0; padding: 12px; background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); border-radius: 8px; box-sizing: border-box; }
-
         .header-nav { width: 100%; max-width: 700px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; }
         .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 10px; text-transform: uppercase; }
-        .btn-matrix:hover { background: var(--matrix-green); color: black; }
 
+        /* Eingabe-Bereich */
         .add-game-container { width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); border: 1px solid var(--matrix-green); border-radius: 15px; margin-bottom: 20px; text-align: center; }
-        .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; border-radius: 8px; }
+        .add-game-container input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; margin: 5px; border-radius: 8px; }
+        #newGameInput { width: 45%; }
+        #newGameAbbr { width: 25%; text-align: center; }
 
-        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); box-shadow: 0 0 20px var(--matrix-green); }
+        .player-status-container { width: 100%; max-width: 700px; margin-bottom: 40px; background: rgba(0, 20, 0, 0.9); border-radius: 15px; padding: 25px; border: 2px solid var(--matrix-green); }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; margin-top: 20px; }
-        .card { background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); border-radius: 15px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; }
+        
+        /* Karten & Diagonaler Text */
+        .card { background: rgba(0, 20, 0, 0.8); border: 1px solid var(--matrix-green); border-radius: 15px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s; height: 180px; }
         .card:hover { box-shadow: 0 0 15px var(--matrix-green); transform: translateY(-5px); }
-        .card img { width: 100%; height: 120px; object-fit: cover; border-bottom: 1px solid var(--matrix-green); }
-        .card img.logo-bg { background: white; padding: 5px; object-fit: contain; }
-        .card-info { padding: 10px; font-size: 0.8rem; }
+        
+        .card-header { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; background: #001500; border-bottom: 1px solid var(--matrix-green); overflow: hidden; position: relative; }
+        .card-header img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .abbr-text { 
+            font-size: 1.8rem; font-weight: 900; color: var(--matrix-green); 
+            transform: rotate(-15deg); text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 2px 2px 10px rgba(0,255,65,0.5);
+        }
 
-        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.7); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .card-info { padding: 10px; font-size: 0.8rem; }
+        .admin-delete { color: var(--danger); cursor: pointer; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.7); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; z-index: 5; }
     </style>
 </head>
 <body>
@@ -49,37 +52,25 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="header-nav">
-        <div id="syncStatus">[MATRIX SYNC ACTIVE]</div>
-        <div>
-            <button id="loginBtn" class="btn-matrix" onclick="openAuthModal()">ADMIN</button>
-            <button id="logoutBtn" class="btn-matrix" style="display:none; color: var(--danger); border-color: var(--danger);" onclick="doLogout()">LOGOUT</button>
-            <button class="btn-matrix" style="margin-left:5px;" onclick="changeName()">NICKNAME</button>
-        </div>
-    </div>
-
-    <div id="authModal">
-        <h3 style="text-align:center;">ADMIN ACCESS</h3>
-        <input type="email" id="authEmail" placeholder="E-MAIL">
-        <input type="password" id="authPass" placeholder="PASSWORT">
-        <button class="btn-matrix" style="width:100%;" onclick="handleAuth()">LOGIN</button>
-        <p onclick="closeAuthModal()" style="font-size:0.7rem; text-align:center; cursor:pointer; color:var(--danger); margin-top:15px;">ABBRECHEN</p>
+        <div>[MATRIX LIVE POOL]</div>
+        <button class="btn-matrix" onclick="changeName()">NICKNAME</button>
     </div>
 
     <div class="add-game-container">
-        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">VORSCHLAG EINREICHEN</div>
-        <input type="text" id="newGameInput" placeholder="SPIELNAME...">
+        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUES SPIEL VORSCHLAGEN</div>
+        <input type="text" id="newGameInput" placeholder="VOLLER TITEL...">
+        <input type="text" id="newGameAbbr" maxlength="7" placeholder="KÜRZEL">
         <button class="btn-matrix" onclick="addGameToPool()">ADD</button>
     </div>
 
     <div class="player-status-container">
-        <div style="text-align:center; letter-spacing: 3px; margin-bottom:10px;">AKTIVE USER</div>
         <div id="playerList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
     <script>
-        // Matrix Rain Animation
+        // Matrix Rain
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -95,7 +86,7 @@
         }
         setInterval(drawMatrix, 35);
 
-        // Firebase Setup
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -107,44 +98,27 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
         const poolRef = db.ref('game_pool');
         const playersRef = db.ref('players');
 
         let nickname = localStorage.getItem('lan_nickname') || "User_" + Math.floor(Math.random()*100);
 
-        // Admin Auth Logik
-        function openAuthModal() { document.getElementById('authModal').style.display = 'block'; }
-        function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
-        function handleAuth() {
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPass').value;
-            auth.signInWithEmailAndPassword(email, pass).then(() => closeAuthModal()).catch(err => alert(err.message));
-        }
-        function doLogout() { auth.signOut(); }
-        auth.onAuthStateChanged(user => {
-            window.isAdmin = !!user;
-            document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
-            document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
-        });
-
-        // SPIEL HINZUFÜGEN (Schreibt in DB und triggert Update bei allen)
         function addGameToPool() {
-            const input = document.getElementById('newGameInput');
-            const val = input.value.trim();
-            if(val) {
+            const title = document.getElementById('newGameInput').value.trim();
+            const abbr = document.getElementById('newGameAbbr').value.trim();
+            if(title) {
                 poolRef.push({ 
-                    title: val, 
-                    img: "", // Platzhalter für User-Vorschläge
+                    title: title, 
+                    abbr: abbr || title.substring(0, 3), // Falls kein Kürzel, nimm erste 3 Buchstaben
                     user: nickname 
                 }).then(() => {
-                    input.value = "";
-                }).catch(err => alert("Fehler: " + err.message));
+                    document.getElementById('newGameInput').value = "";
+                    document.getElementById('newGameAbbr').value = "";
+                });
             }
         }
 
-        // --- LIVE UPDATE FUNKTION ---
-        // Diese Funktion wird AUTOMATISCH ausgeführt, wenn sich Daten in Firebase ändern
+        // Live-Rendering
         poolRef.on('value', snapshot => {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
@@ -156,16 +130,16 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 
-                // Nur Admins sehen das Löschen-X
-                let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                
-                // Bild-Logik: Falls kein Pfad angegeben, Platzhalter nutzen
-                let imgSrc = game.img ? game.img : 'https://via.placeholder.com/150x120/000800/00ff41?text=?';
-                let imgClass = (game.title && game.title.toLowerCase().includes("quake")) ? "logo-bg" : "";
+                // Header Inhalt (Bild oder Kürzel)
+                let headerContent = '';
+                if(game.img) {
+                    headerContent = `<img src="${game.img}" onerror="this.style.display='none'">`;
+                } else {
+                    headerContent = `<div class="abbr-text">${game.abbr || 'GAME'}</div>`;
+                }
 
                 card.innerHTML = `
-                    ${del}
-                    <img src="${imgSrc}" class="${imgClass}" onerror="this.src='https://via.placeholder.com/150x120/000800/00ff41?text=IMG'">
+                    <div class="card-header">${headerContent}</div>
                     <div class="card-info">
                         <strong>${game.title}</strong><br>
                         <span style="font-size:0.6rem;opacity:0.6;">BY ${game.user || 'SYSTEM'}</span>
@@ -173,14 +147,14 @@
                 `;
                 
                 card.onclick = () => {
-                    db.ref('current_game').set({ title: game.title, img: game.img || "" });
+                    db.ref('current_game').set({ title: game.title });
                     playersRef.child(nickname).set(game.title);
                 };
                 grid.appendChild(card);
             });
         });
 
-        // Spielerliste Live-Update
+        // Spielerliste Update
         playersRef.on('value', s => {
             const l = document.getElementById('playerList');
             l.innerHTML = '';
@@ -188,8 +162,7 @@
             if (p) {
                 Object.keys(p).forEach(name => {
                     const row = document.createElement('div'); 
-                    row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.padding = "8px";
-                    row.style.borderBottom = "1px solid rgba(0,255,65,0.2)";
+                    row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.padding = "5px";
                     row.innerHTML = `<span>${name}</span><span style="color:white">${p[name]}</span>`;
                     l.appendChild(row);
                 });
