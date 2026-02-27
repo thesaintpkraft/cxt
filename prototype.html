@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAN 2026 | PROTOTYPE</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+    <style>
+        :root { --matrix-green: #00ff41; --matrix-dark: #000800; --danger: #ff4b2b; }
+        body { font-family: 'Courier New', monospace; background: var(--matrix-dark); color: var(--matrix-green); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Input Bereich */
+        .add-game-box { 
+            width: 100%; max-width: 600px; padding: 20px; 
+            border: 2px solid var(--matrix-green); margin-bottom: 30px; 
+            background: rgba(0, 20, 0, 0.9); text-align: center;
+        }
+        input { background: black; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; width: 60%; margin-right: 10px; }
+        button { background: var(--matrix-green); color: black; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+
+        /* Spiele Liste */
+        .game-pool { width: 100%; max-width: 800px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .game-item { 
+            background: rgba(0, 40, 0, 0.5); border: 1px solid var(--matrix-green); 
+            padding: 15px; text-align: center; position: relative; transition: 0.2s;
+            cursor: pointer;
+        }
+        .game-item:hover { background: var(--matrix-green); color: black; }
+        
+        .delete-btn { 
+            position: absolute; top: 5px; right: 5px; color: var(--danger); 
+            font-weight: bold; cursor: pointer; display: none; padding: 5px;
+        }
+
+        .active-status { font-size: 0.8rem; border: 1px solid var(--matrix-green); padding: 5px 10px; margin-bottom: 20px; }
+        .admin-only { display: none; margin-bottom: 10px; color: var(--danger); font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+
+    <div class="active-status" id="authStatus">GAST MODUS</div>
+
+    <div class="add-game-box">
+        <h3>NEUES SPIEL VORSCHLAGEN</h3>
+        <input type="text" id="newGameTitle" placeholder="Titel eingeben...">
+        <button onclick="addGame()">HINZUFÜGEN</button>
+    </div>
+
+    <div class="admin-only" id="adminInfo">ADMIN RECHTE AKTIV - LÖSCHEN ERLAUBT</div>
+
+    <div class="game-pool" id="poolList">
+        </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
+            authDomain: "lan-party-dd5e6.firebaseapp.com",
+            databaseURL: "https://lan-party-dd5e6-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "lan-party-dd5e6",
+            storageBucket: "lan-party-dd5e6.firebasestorage.app",
+            messagingSenderId: "1070535216863",
+            appId: "1:1070535216863:web:3052c02bea67dc2881636a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const poolRef = db.ref('game_pool');
+        const auth = firebase.auth();
+
+        // Admin Status Check
+        auth.onAuthStateChanged(user => {
+            window.isAdmin = !!user;
+            document.getElementById('authStatus').innerText = user ? "ADMIN ANGEMELDET" : "GAST MODUS";
+            document.getElementById('adminInfo').style.display = user ? "block" : "none";
+            loadPool(); // Liste neu zeichnen um Delete-Buttons zu zeigen/verstecken
+        });
+
+        // Spiel hinzufügen
+        function addGame() {
+            const title = document.getElementById('newGameTitle').value.trim();
+            if (title === "") return;
+            
+            // Neues Spiel mit eindeutiger ID speichern
+            poolRef.push({
+                title: title,
+                addedBy: localStorage.getItem('lan_nickname') || "Anonym"
+            });
+            
+            document.getElementById('newGameTitle').value = "";
+        }
+
+        // Pool laden & Synchronisieren
+        function loadPool() {
+            poolRef.on('value', snapshot => {
+                const list = document.getElementById('poolList');
+                list.innerHTML = "";
+                const data = snapshot.val();
+                
+                if (data) {
+                    Object.keys(data).forEach(id => {
+                        const game = data[id];
+                        const div = document.createElement('div');
+                        div.className = "game-item";
+                        div.innerHTML = `
+                            <span>${game.title}</span>
+                            <span class="delete-btn" id="del-${id}" onclick="event.stopPropagation(); deleteGame('${id}')"> [X] </span>
+                        `;
+                        
+                        // Admin Lösch-Button anzeigen
+                        if (window.isAdmin) {
+                            setTimeout(() => {
+                                const btn = document.getElementById(`del-${id}`);
+                                if (btn) btn.style.display = "block";
+                            }, 10);
+                        }
+
+                        // Bei Klick als "Aktiv" setzen (wie in der Hauptseite)
+                        div.onclick = () => {
+                            db.ref('current_game').set({ title: game.title, img: "" });
+                            db.ref('players').child(localStorage.getItem('lan_nickname')).set(game.title);
+                            alert(game.title + " wurde als aktives Spiel gesetzt!");
+                        };
+
+                        list.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        function deleteGame(id) {
+            if (confirm("Dieses Spiel wirklich aus dem Pool entfernen?")) {
+                poolRef.child(id).remove();
+            }
+        }
+
+        window.onload = loadPool;
+    </script>
+</body>
+</html>
