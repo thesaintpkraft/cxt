@@ -9,41 +9,44 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        :root { --primary: #00ffcc; --bg: #0f172a; --card: #1e293b; --text-muted: #94a3b8; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .status-bar { font-size: 0.8rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; margin-bottom: 20px; color: var(--primary); border: 1px solid #334155; }
+        .status-bar { font-size: 0.75rem; padding: 5px 15px; border-radius: 20px; background: #1e293b; margin-bottom: 15px; color: var(--primary); border: 1px solid #334155; }
 
         .drop-zone { 
-            width: 100%; max-width: 600px; min-height: 250px; margin-bottom: 40px; padding: 20px; 
+            width: 100%; max-width: 600px; min-height: 220px; padding: 20px; 
             border: 3px dashed #334155; border-radius: 20px; background: rgba(30, 41, 59, 0.8); 
             text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         
-        #activeContent img { max-width: 100%; height: 200px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; }
-        #activeContent h3 { font-size: 2rem; color: var(--primary); margin: 15px 0 0; }
+        #activeContent img { max-width: 100%; height: 180px; border-radius: 10px; border: 2px solid var(--primary); object-fit: contain; margin-bottom: 10px; }
+        #activeContent h3 { font-size: 1.8rem; color: var(--primary); margin: 0; text-transform: uppercase; }
 
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 15px; 
-            width: 100%; 
-            max-width: 1200px;
-            padding-bottom: 50px;
+        .log-container {
+            width: 100%; max-width: 600px; margin: 20px 0 40px;
+            background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 10px;
+            border: 1px solid #1e293b; font-size: 0.85rem;
         }
+        .log-entry { 
+            display: flex; justify-content: space-between; padding: 6px 10px; 
+            border-bottom: 1px solid #1e293b; color: var(--text-muted);
+            animation: slideIn 0.3s ease-out;
+        }
+        .log-entry:last-child { border-bottom: none; }
+        .log-user { color: var(--primary); font-weight: bold; }
+        .log-game { color: white; }
 
-        .card { 
-            background: var(--card); border-radius: 12px; overflow: hidden; 
-            cursor: pointer; border: 1px solid #334155; transition: 0.2s; 
-            display: flex; flex-direction: column; touch-action: manipulation;
-        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 1200px; padding-bottom: 50px; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid #334155; transition: 0.2s; display: flex; flex-direction: column; touch-action: manipulation; }
         .card:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .card:active { transform: scale(0.95); background: #2d3748; }
-        
         .card img { width: 100%; height: 160px; object-fit: cover; pointer-events: none; background: #000; }
         .card-title { padding: 8px; font-size: 0.8rem; font-weight: bold; text-align: center; background: #1c2641; min-height: 35px; display: flex; align-items: center; justify-content: center; }
-        
-        .hint { font-size: 0.7rem; color: #475569; margin-top: 5px; }
+
+        .settings-btn { margin-top: auto; padding: 20px; font-size: 0.7rem; color: #475569; cursor: pointer; text-decoration: underline; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -51,16 +54,43 @@
     <div class="status-bar" id="syncStatus">Verbinde...</div>
 
     <div class="drop-zone" id="dropZone">
-        <h2 style="color:var(--primary); margin-top:0; font-size: 0.9rem; letter-spacing: 2px;">AKTUELL AKTIV</h2>
+        <h2 style="color:var(--primary); margin-top:0; font-size: 0.8rem; letter-spacing: 2px;">JETZT AKTIV</h2>
         <div id="activeContent">
-            <p style="color:#475569">Warte auf Daten...</p>
+            <p style="color:#475569">Warte auf Synchronisation...</p>
         </div>
-        <p class="hint">Tippe ein Spiel an oder ziehe es hierher</p>
+    </div>
+
+    <div class="log-container" id="logContainer">
+        <div style="text-align: center; font-size: 0.7rem; color: #475569; margin-bottom: 5px; text-transform: uppercase;">Letzte 5 Aktivitäten</div>
+        <div id="logList"></div>
     </div>
 
     <div class="grid" id="gameGrid"></div>
 
+    <div class="settings-btn" onclick="changeName()">Nickname ändern</div>
+
     <script>
+        // Nickname Logik
+        function getName() {
+            let nick = localStorage.getItem('lan_nickname');
+            if (!nick) {
+                nick = prompt("Willkommen zur LAN! Bitte gib deinen Nickname ein:", "Gast_" + Math.floor(Math.random()*100));
+                if (!nick || nick.trim() === "") nick = "Anonym";
+                localStorage.setItem('lan_nickname', nick);
+            }
+            return nick;
+        }
+
+        function changeName() {
+            let newNick = prompt("Neuen Nickname eingeben:", localStorage.getItem('lan_nickname'));
+            if (newNick && newNick.trim() !== "") {
+                localStorage.setItem('lan_nickname', newNick);
+                location.reload(); // Seite neu laden um Namen zu übernehmen
+            }
+        }
+
+        let nickname = getName();
+
         const firebaseConfig = {
             apiKey: "AIzaSyA9VdTsTAKpf0F3C_E8PKiYEIV_gsKvq70",
             authDomain: "lan-party-dd5e6.firebaseapp.com",
@@ -74,6 +104,7 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const gameRef = database.ref('current_game');
+        const logRef = database.ref('activity_logs');
 
         const games = [
             { title: "The Finals", img: "img/thefinals.jpg" },
@@ -92,41 +123,26 @@
             { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
         ];
 
-        const grid = document.getElementById('gameGrid');
-        const dropZone = document.getElementById('dropZone');
-        const statusDisplay = document.getElementById('syncStatus');
-
         function renderPool() {
+            const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
             games.forEach(game => {
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.draggable = true;
-                card.innerHTML = `
-                    <img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x200?text=Fehler'">
-                    <div class="card-title">${game.title}</div>
-                `;
+                card.innerHTML = `<img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x200?text=Fehler'"><div class="card-title">${game.title}</div>`;
                 
-                // FUNKTION FÜR PC (Drag)
-                card.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('application/json', JSON.stringify(game));
-                });
-
-                // FUNKTION FÜR MOBIL & PC (Klick)
-                card.addEventListener('click', () => {
+                card.onclick = () => {
+                    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     gameRef.set(game);
-                });
-
+                    logRef.push({
+                        user: nickname,
+                        game: game.title,
+                        time: time
+                    });
+                };
                 grid.appendChild(card);
             });
         }
-
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const data = JSON.parse(e.dataTransfer.getData('application/json'));
-            gameRef.set(data);
-        });
 
         gameRef.on('value', (snapshot) => {
             const data = snapshot.val();
@@ -135,7 +151,25 @@
                     <img src="${data.img}" style="animation: fadeIn 0.4s ease-out;">
                     <h3>${data.title}</h3>
                 `;
-                statusDisplay.innerText = "Live: " + data.title;
+                document.getElementById('syncStatus').innerText = "Angemeldet als: " + nickname;
+            }
+        });
+
+        logRef.limitToLast(5).on('value', (snapshot) => {
+            const logs = snapshot.val();
+            const logList = document.getElementById('logList');
+            logList.innerHTML = '';
+            if (logs) {
+                const sortedLogs = Object.values(logs).reverse();
+                sortedLogs.forEach(entry => {
+                    const div = document.createElement('div');
+                    div.className = 'log-entry';
+                    div.innerHTML = `
+                        <span>${entry.time}</span>
+                        <span><span class="log-user">${entry.user}</span> spielt <span class="log-game">${entry.game}</span></span>
+                    `;
+                    logList.appendChild(div);
+                });
             }
         });
 
