@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN 2026 | PROTOTYPE REPAIRED</title>
+    <title>LAN 2026 | PROTOTYPE V3</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -30,7 +30,6 @@
 
         .header-nav { width: 100%; max-width: 700px; display: flex; justify-content: space-between; margin-bottom: 20px; z-index: 10; }
         .btn-matrix { background: black; color: var(--matrix-green); border: 1px solid var(--matrix-green); padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 10px; text-transform: uppercase; }
-        .btn-matrix:hover { background: var(--matrix-green); color: black; }
 
         .add-game-container {
             width: 100%; max-width: 700px; padding: 20px; background: rgba(0, 20, 0, 0.9); 
@@ -50,10 +49,13 @@
             border-radius: 15px; overflow: hidden; text-align: center; cursor: pointer; position: relative; transition: 0.3s;
         }
         .card img { width: 100%; height: 120px; object-fit: cover; border-bottom: 1px solid var(--matrix-green); }
+        /* Spezieller Hintergrund für Quake & Logos */
+        .card img.logo-bg { background: white; padding: 5px; box-sizing: border-box; object-fit: contain; }
+        
         .card-info { padding: 10px; font-size: 0.9rem; }
         .card:hover { box-shadow: 0 0 15px var(--matrix-green); transform: translateY(-5px); }
 
-        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.7); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; }
+        .admin-delete { color: var(--danger); cursor: pointer; font-size: 1.2rem; position: absolute; top: 5px; right: 8px; font-weight: bold; background: rgba(0,0,0,0.7); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; z-index: 5; }
     </style>
 </head>
 <body>
@@ -61,7 +63,7 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="header-nav">
-        <div id="syncStatus">[SYSTEM ACTIVE]</div>
+        <div id="syncStatus">[DATABASE MODE]</div>
         <div>
             <button id="loginBtn" class="btn-matrix" onclick="openAuthModal()">LOGIN</button>
             <button id="logoutBtn" class="btn-matrix" style="display:none; color: var(--danger); border-color: var(--danger);" onclick="doLogout()">LOGOUT</button>
@@ -78,13 +80,13 @@
     </div>
 
     <div class="add-game-container">
-        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">NEUER VORSCHLAG</div>
+        <div style="font-size: 0.7rem; margin-bottom: 10px; letter-spacing: 2px;">VORSCHLAG EINREICHEN</div>
         <input type="text" id="newGameInput" placeholder="SPIELNAME...">
         <button class="btn-matrix" onclick="addGameToPool()">ADD</button>
     </div>
 
     <div class="player-status-container">
-        <div style="text-align:center; letter-spacing: 3px; margin-bottom:15px;">WER ZOCKT WAS?</div>
+        <div style="text-align:center; letter-spacing: 3px; margin-bottom:15px;">AKTIVE USER</div>
         <div id="playerList"></div>
     </div>
 
@@ -125,11 +127,12 @@
 
         let nickname = localStorage.getItem('lan_nickname') || "User_" + Math.floor(Math.random()*100);
 
-        const coreGames = [
+        // Grunddaten für die erste Befüllung
+        const coreData = [
             { title: "The Finals", img: "img/thefinals.jpg" },
             { title: "Warcraft 3", img: "img/Warcraft_3_logo.jpg" },
             { title: "CS 1.6", img: "img/cs16.jpg" },
-            { title: "Quake 3", img: "img/Quake_III_Arena_Logo.svg.png" },
+            { title: "Quake 3", img: "img/quake3.png" }, // Aktualisiert
             { title: "Flatout 2", img: "img/Flatout2pc.jpg" },
             { title: "World War Z", img: "img/World_War_Z_cover_art.jpg" },
             { title: "Trackmania", img: "img/Cover_of_Trackmania.jpg" },
@@ -142,7 +145,16 @@
             { title: "Northgard", img: "img/Northgard_cover_art.jpg" }
         ];
 
-        // Admin Auth Funktionen
+        // Funktion zur Erstbefüllung
+        function initDatabase() {
+            poolRef.once('value', s => {
+                if(!s.exists()) {
+                    coreData.forEach(item => poolRef.push(item));
+                }
+            });
+        }
+
+        // Admin Auth
         function openAuthModal() { document.getElementById('authModal').style.display = 'block'; }
         function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
         function handleAuth() {
@@ -155,71 +167,67 @@
             window.isAdmin = !!user;
             document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
             document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
+            // Force re-render after auth change to show/hide delete buttons
+            poolRef.once('value', renderGames);
         });
 
         // Spiel hinzufügen
         function addGameToPool() {
             const val = document.getElementById('newGameInput').value.trim();
             if(val) {
-                poolRef.push({ title: val, user: nickname });
+                poolRef.push({ title: val, img: "", user: nickname });
                 document.getElementById('newGameInput').value = "";
             }
         }
 
-        // --- ZENTRALE RENDER FUNKTION ---
-        function renderAllGames(snapshot) {
+        // --- STABILE RENDER FUNKTION ---
+        function renderGames(snapshot) {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = ''; 
+            const data = snapshot.val();
+            if(!data) return;
 
-            // 1. Grundspiele (Immer da)
-            coreGames.forEach(game => {
+            Object.keys(data).forEach(id => {
+                const game = data[id];
                 const card = document.createElement('div');
                 card.className = 'card';
-                // WICHTIG: Hier sind die Bilder eingebaut
+                
+                let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
+                
+                // Bild-Logik: Falls kein Bild da ist, zeige Matrix-Platzhalter
+                let imgSrc = game.img ? game.img : 'https://via.placeholder.com/150x120/000800/00ff41?text=?';
+                let imgClass = (game.title.toLowerCase().includes("quake") || game.title.toLowerCase().includes("blobby")) ? "logo-bg" : "";
+
                 card.innerHTML = `
-                    <img src="${game.img}" onerror="this.src='https://via.placeholder.com/150x120?text=No+Image'">
-                    <div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5;">CORE</span></div>
+                    ${del}
+                    <img src="${imgSrc}" class="${imgClass}" onerror="this.src='https://via.placeholder.com/150x120/000800/00ff41?text=ERR'">
+                    <div class="card-info">
+                        <strong>${game.title}</strong><br>
+                        <span style="font-size:0.6rem;opacity:0.6;">${game.user ? 'BY ' + game.user : 'SYSTEM'}</span>
+                    </div>
                 `;
+                
                 card.onclick = () => {
                     db.ref('current_game').set({ title: game.title });
                     playersRef.child(nickname).set(game.title);
                 };
                 grid.appendChild(card);
             });
-
-            // 2. Vorschläge aus Firebase (Hinzugefügt)
-            const data = snapshot.val();
-            if(data) {
-                Object.keys(data).forEach(id => {
-                    const game = data[id];
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    let del = window.isAdmin ? `<span class="admin-delete" onclick="event.stopPropagation(); firebase.database().ref('game_pool').child('${id}').remove()">×</span>` : "";
-                    card.innerHTML = `
-                        ${del}
-                        <div style="height:120px; display:flex; align-items:center; justify-content:center; background:#001100; font-size:2rem;">?</div>
-                        <div class="card-info"><strong>${game.title}</strong><br><span style="font-size:0.6rem;opacity:0.5;">BY ${game.user || 'ANON'}</span></div>
-                    `;
-                    card.onclick = () => {
-                        db.ref('current_game').set({ title: game.title });
-                        playersRef.child(nickname).set(game.title);
-                    };
-                    grid.appendChild(card);
-                });
-            }
         }
 
-        // Firebase Listener
-        poolRef.on('value', renderAllGames);
+        // Listener auf den kompletten Pool
+        poolRef.on('value', renderGames);
 
         playersRef.on('value', s => {
             const l = document.getElementById('playerList');
             l.innerHTML = '';
-            if (s.val()) {
-                Object.keys(s.val()).forEach(name => {
+            const p = s.val();
+            if (p) {
+                Object.keys(p).forEach(name => {
                     const row = document.createElement('div'); 
-                    row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.padding = "5px";
-                    row.innerHTML = `<span>${name}</span><span style="color:white">${s.val()[name]}</span>`;
+                    row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.padding = "8px";
+                    row.style.borderBottom = "1px solid rgba(0,255,65,0.2)";
+                    row.innerHTML = `<span>${name}</span><span style="color:white">${p[name]}</span>`;
                     l.appendChild(row);
                 });
             }
@@ -229,6 +237,8 @@
             let n = prompt("NAME:", nickname);
             if (n) { localStorage.setItem('lan_nickname', n.trim()); location.reload(); }
         }
+
+        window.onload = initDatabase;
     </script>
 </body>
 </html>
